@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Jogo do Bicho — VériBed</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#09090f;--panel:#111118;--card:#141420;--border:#1e1e2e;
+  --coral:#f4845f;--teal:#4ecdc4;--yellow:#ffe66d;--lavender:#a29bfe;--pink:#fd79a8;
+  --green:#2ecc71;--red:#e03131;--text:#e8e8f0;--muted:#5a5a70;
+  --syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--dm);overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+.header{position:sticky;top:0;z-index:50;background:rgba(9,9,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px}
+.back-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:16px;padding:6px 10px;cursor:pointer;line-height:1;transition:.15s}
+.back-btn:active{background:var(--border)}
+.logo{font-family:var(--syne);font-size:18px;font-weight:800;letter-spacing:-0.5px}
+.logo em{font-style:normal;color:#ffe66d}
+
+.hero{padding:28px 20px 10px;position:relative;z-index:1;text-align:center}
+.hero-emoji{font-size:48px;display:block;margin-bottom:10px}
+.hero h1{font-family:var(--syne);font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:6px}
+.hero h1 span{color:#ffe66d}
+.hero p{font-size:13px;color:var(--muted);line-height:1.6}
+
+.section-label{font-family:var(--syne);font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin:20px 20px 12px;display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 30px;position:relative;z-index:1}
+.tool-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;-webkit-user-select:none;user-select:none}
+.tool-card:active{transform:scale(.95)}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
+.tool-card:nth-child(1)::before{background:var(--coral)}
+.tool-card:nth-child(2)::before{background:var(--teal)}
+.tool-card:nth-child(3)::before{background:var(--lavender)}
+.tool-card:nth-child(4)::before{background:var(--pink)}
+.tool-card:nth-child(5)::before{background:var(--yellow)}
+.tool-card:nth-child(1){border-color:rgba(244,132,95,.2)}
+.tool-card:nth-child(2){border-color:rgba(78,205,196,.2)}
+.tool-card:nth-child(3){border-color:rgba(162,155,254,.2)}
+.tool-card:nth-child(4){border-color:rgba(253,121,168,.2)}
+.tool-card:nth-child(5){border-color:rgba(255,230,109,.2)}
+.tool-card .t-emoji{font-size:28px;display:block;margin-bottom:8px}
+.tool-card h3{font-family:var(--syne);font-size:13px;font-weight:700;line-height:1.3;margin-bottom:4px}
+.tool-card p{font-size:11px;color:var(--muted);line-height:1.4}
+/* wide card for 5th */
+.tool-card.wide{grid-column:1/-1}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--panel);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:28px 20px 40px;position:relative;transform:translateY(40px);transition:transform .3s cubic-bezier(.34,1.4,.64,1)}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal::-webkit-scrollbar{width:3px}
+.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:16px;transition:.15s}
+.modal-close:active{background:var(--border)}
+.modal-title{font-family:var(--syne);font-size:20px;font-weight:800;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.5}
+
+/* ===== TABS ===== */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;font-family:var(--dm);font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:.15s}
+.tab-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ===== FORM ===== */
+label.flabel{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input[type=number],input[type=text],select{width:100%;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-family:var(--dm);font-size:15px;font-weight:600;color:var(--text);outline:none;transition:.15s;appearance:none;-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--coral);box-shadow:0 0 0 3px rgba(244,132,95,.15)}
+select option{background:var(--card)}
+
+/* ===== RESULT BOX ===== */
+.result-box{margin-top:16px;padding:20px;border-radius:14px;background:var(--card);border:1px solid var(--border);display:none;text-align:center;animation:fadeUp .25s ease}
+.result-box.show{display:block}
+.result-emoji{font-size:3rem;line-height:1;margin-bottom:8px}
+.result-name{font-family:var(--syne);font-size:22px;font-weight:800;color:var(--coral)}
+.result-sub{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== ANIMAL TABLE ===== */
+.animal-table{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:7px;max-height:50vh;overflow-y:auto;padding-right:2px}
+.animal-table::-webkit-scrollbar{width:3px}
+.animal-table::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.animal-cell{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:.15s;border-left:2px solid transparent}
+.animal-cell:active{border-left-color:var(--coral);background:#1e1e2e}
+.cell-emoji{font-size:1.4rem;display:block;margin-bottom:3px}
+.cell-name{font-size:11px;font-weight:700;color:var(--text);display:block}
+.cell-nums{color:var(--muted);font-size:10px;font-weight:500}
+.cell-detail{margin-bottom:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;display:none;animation:fadeUp .2s ease}
+.cell-detail.show{display:block}
+
+/* ===== PALPITE ===== */
+.palpite-card{text-align:center;padding:24px 20px;background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;transition:.3s}
+.palpite-big{font-family:var(--syne);font-size:72px;font-weight:800;color:var(--coral);line-height:1;margin:8px 0 4px}
+.palpite-animal{font-size:18px;font-weight:700;margin-bottom:6px}
+.palpite-nums{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+/* ===== ANIMAL DO DIA ===== */
+.animal-dia{text-align:center;padding:22px;background:var(--card);border:1px solid rgba(162,155,254,.25);border-radius:16px;margin-bottom:16px}
+.animal-dia-emoji{font-size:56px;margin-bottom:8px}
+.animal-dia-name{font-family:var(--syne);font-size:24px;font-weight:800;color:var(--lavender)}
+.animal-dia-desc{font-size:12px;color:var(--muted);margin-top:4px}
+.fortune-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.fortune-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+.fortune-text{font-size:14px;font-weight:500;color:var(--text);line-height:1.55;font-style:italic}
+
+/* ===== QUIZ ===== */
+.quiz-score-bar{display:flex;justify-content:space-around;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px}
+.score-item{text-align:center}
+.score-val{font-family:var(--syne);font-size:20px;font-weight:800;display:block}
+.score-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.quiz-progress{height:5px;background:var(--border);border-radius:3px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--coral));border-radius:3px;transition:width .4s ease}
+.quiz-question{font-family:var(--syne);font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;line-height:1.3;min-height:50px;display:flex;align-items:center;justify-content:center}
+.quiz-hint{text-align:center;font-size:12px;color:var(--muted);margin-bottom:18px}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.quiz-opt{padding:13px 10px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-family:var(--dm);font-size:13px;font-weight:700;cursor:pointer;text-align:center;transition:.15s;color:var(--text);display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
+.quiz-opt:active:not(:disabled){transform:scale(.96)}
+.quiz-opt.correct{background:rgba(46,204,113,.15);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:rgba(224,49,49,.15);border-color:var(--red);color:var(--red)}
+.quiz-opt:disabled{cursor:default}
+.quiz-opt-emoji{font-size:1.4rem}
+.quiz-feedback{text-align:center;padding:10px;border-radius:10px;font-weight:700;font-size:13px;margin-bottom:14px;display:none;animation:popIn .2s}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.quiz-feedback.correct{background:rgba(46,204,113,.15);color:var(--green);display:block}
+.quiz-feedback.wrong{background:rgba(224,49,49,.15);color:var(--red);display:block}
+.timer-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:16px}
+.timer-bar-fill{height:100%;background:var(--coral);border-radius:3px;transition:width .1s linear}
+.quiz-timer{text-align:center;font-family:var(--syne);font-size:16px;font-weight:700;color:var(--coral);margin-bottom:10px}
+
+/* ===== MODE SELECTOR ===== */
+.mode-selector{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.mode-btn{padding:14px 10px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:var(--dm);font-weight:700;font-size:12px;text-align:center;transition:.15s;color:var(--text)}
+.mode-btn.selected{background:rgba(78,205,196,.12);border-color:var(--teal);color:var(--teal)}
+.mode-btn .mode-emoji{font-size:1.4rem;display:block;margin-bottom:4px}
+.mode-btn small{opacity:.6;font-weight:500}
+
+/* ===== BTN ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:50px;border:none;font-family:var(--dm);font-size:14px;font-weight:700;cursor:pointer;transition:.15s;width:100%;text-align:center}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:var(--coral);color:#fff}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-teal{background:var(--teal);color:#000}
+
+/* ===== RANKING ===== */
+.ranking-list{list-style:none}
+.ranking-list li{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-weight:700}
+.rk-pos{font-family:var(--syne);font-size:18px;font-weight:700;width:26px;text-align:center}
+.rk-pos.gold{color:#ffd43b}.rk-pos.silver{color:#adb5bd}.rk-pos.bronze{color:#cd7f32}
+.rk-name{flex:1;font-size:14px}
+.rk-score{font-family:var(--syne);font-size:16px;color:var(--coral)}
+
+/* ===== STAT ROW ===== */
+.stat-row{display:flex;gap:8px;margin-bottom:16px}
+.stat-pill{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.sp-val{font-family:var(--syne);font-size:22px;font-weight:800;color:var(--coral);display:block}
+.sp-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+
+/* ===== CONFETTI ===== */
+.confetti-piece{position:fixed;pointer-events:none;z-index:9999;animation:confettiFall 1.2s ease-in forwards;border-radius:2px}
+@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(80vh) rotate(720deg);opacity:0}}
+
+.q-count-row{display:flex;gap:6px;margin-bottom:18px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+  <div class="logo">Véri<em>Bed</em> · Bicho</div>
+</div>
+
+<div class="hero">
+  <span class="hero-emoji">🐊</span>
+  <h1>Jogo do <span>Bicho</span></h1>
+  <p>Ferramentas inúteis mas muito divertidas sobre o jogo mais famoso do Brasil.</p>
+</div>
+
+<div class="section-label">Ferramentas</div>
+
+<div class="tools-grid">
+  <div class="tool-card" onclick="openTool('bicho')">
+    <span class="t-emoji">🐊</span>
+    <h3>Decorador</h3>
+    <p>Número → Animal e vice-versa</p>
+  </div>
+  <div class="tool-card" onclick="openTool('quiz')">
+    <span class="t-emoji">🧠</span>
+    <h3>Quiz</h3>
+    <p>Teste seus conhecimentos com ranking!</p>
+  </div>
+  <div class="tool-card" onclick="openTool('palpite')">
+    <span class="t-emoji">🎲</span>
+    <h3>Palpite Aleatório</h3>
+    <p>Deixa o universo escolher</p>
+  </div>
+  <div class="tool-card" onclick="openTool('tabela')">
+    <span class="t-emoji">📋</span>
+    <h3>Tabela Completa</h3>
+    <p>Os 25 grupos com números</p>
+  </div>
+  <div class="tool-card wide" onclick="openTool('diadinha')">
+    <span class="t-emoji">📅</span>
+    <h3>Animal do Dia</h3>
+    <p>Qual animal rege seu dia hoje? Descubra e sinta-se iluminado(a).</p>
+  </div>
+</div>
+
+<!-- MODAL OVERLAY -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeOverlay(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeTool()">✕</button>
+    <div id="toolRender"></div>
+  </div>
+</div>
+
+<script>
+const BICHO = [
+  {grupo:1,  animal:'Avestruz',  emoji:'🦚', numeros:[1,2,3,4]},
+  {grupo:2,  animal:'Águia',     emoji:'🦅', numeros:[5,6,7,8]},
+  {grupo:3,  animal:'Burro',     emoji:'🫏', numeros:[9,10,11,12]},
+  {grupo:4,  animal:'Borboleta', emoji:'🦋', numeros:[13,14,15,16]},
+  {grupo:5,  animal:'Cachorro',  emoji:'🐶', numeros:[17,18,19,20]},
+  {grupo:6,  animal:'Cabra',     emoji:'🐐', numeros:[21,22,23,24]},
+  {grupo:7,  animal:'Carneiro',  emoji:'🐑', numeros:[25,26,27,28]},
+  {grupo:8,  animal:'Camelo',    emoji:'🐪', numeros:[29,30,31,32]},
+  {grupo:9,  animal:'Cobra',     emoji:'🐍', numeros:[33,34,35,36]},
+  {grupo:10, animal:'Coelho',    emoji:'🐰', numeros:[37,38,39,40]},
+  {grupo:11, animal:'Cavalo',    emoji:'🐴', numeros:[41,42,43,44]},
+  {grupo:12, animal:'Elefante',  emoji:'🐘', numeros:[45,46,47,48]},
+  {grupo:13, animal:'Galo',      emoji:'🐓', numeros:[49,50,51,52]},
+  {grupo:14, animal:'Gato',      emoji:'🐱', numeros:[53,54,55,56]},
+  {grupo:15, animal:'Jacaré',    emoji:'🐊', numeros:[57,58,59,60]},
+  {grupo:16, animal:'Leão',      emoji:'🦁', numeros:[61,62,63,64]},
+  {grupo:17, animal:'Macaco',    emoji:'🐒', numeros:[65,66,67,68]},
+  {grupo:18, animal:'Porco',     emoji:'🐷', numeros:[69,70,71,72]},
+  {grupo:19, animal:'Pavão',     emoji:'🦚', numeros:[73,74,75,76]},
+  {grupo:20, animal:'Peru',      emoji:'🦃', numeros:[77,78,79,80]},
+  {grupo:21, animal:'Touro',     emoji:'🐂', numeros:[81,82,83,84]},
+  {grupo:22, animal:'Tigre',     emoji:'🐯', numeros:[85,86,87,88]},
+  {grupo:23, animal:'Urso',      emoji:'🐻', numeros:[89,90,91,92]},
+  {grupo:24, animal:'Veado',     emoji:'🦌', numeros:[93,94,95,96]},
+  {grupo:25, animal:'Vaca',      emoji:'🐄', numeros:[97,98,99,0]},
+];
+
+const fortunes = [
+  'Hoje é um bom dia para fazer nada e chamar de descanso estratégico.',
+  'Evite decisões importantes antes do café.',
+  'Você vai achar aquela coisa que perdeu... no lugar mais óbvio.',
+  'Alguém vai te mandar "oi" hoje sem dizer mais nada.',
+  'Uma surpresa pequena vai fazer seu dia melhor.',
+  'Hoje não é dia de responder mensagem de trabalho às 22h.',
+  'O universo conspira a seu favor. Mas ainda assim faça backup dos seus arquivos.',
+  'Hydrate. Beba água.',
+  'Aquele projeto "pra amanhã" vai continuar sendo "pra amanhã".',
+  'Uma boa ideia vai surgir no momento mais inconveniente possível.',
+  'Hoje seu Wi-Fi vai funcionar perfeitamente... exceto quando você mais precisar.',
+  'Sorte grande pra quem parar de apertar F5.',
+];
+
+function bichoByNum(n){n=((n%100)+100)%100;return BICHO.find(b=>b.numeros.includes(n))}
+function fmtNums(b){return b.numeros.map(n=>String(n).padStart(2,'0')).join(' · ')}
+function sample(arr,n){const c=[...arr],o=[];while(o.length<n&&c.length){const i=Math.floor(Math.random()*c.length);o.push(c.splice(i,1)[0])}return o}
+
+function openTool(id){
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  renderTool(id);
+}
+function closeTool(){
+  clearQuizTimer();
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeOverlay(e){if(e.target.id==='modalOverlay')closeTool()}
+
+function renderTool(id){
+  const map={bicho:renderBicho,quiz:renderQuizSetup,palpite:renderPalpite,tabela:renderTabela,diadinha:renderAnimalDia};
+  if(map[id]) document.getElementById('toolRender').innerHTML=map[id]();
+}
+
+// ===== DECORADOR =====
+function renderBicho(){return`
+<div class="modal-title">🐊 Decorador do Bicho</div>
+<div class="modal-sub">Converta números em animais e vice-versa</div>
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('num2animal')">🔢 Nº → Animal</button>
+  <button class="tab-btn" onclick="switchTab('animal2num')">🐾 Animal → Nº</button>
+</div>
+<div id="tab-num2animal" class="tab-panel active">
+  <label class="flabel">Digite um número (00–99)</label>
+  <input type="number" id="inp-num" min="0" max="99" placeholder="Ex: 42" oninput="convertN2A()" style="text-align:center;font-size:1.4rem">
+  <div id="res-n2a" class="result-box"></div>
+</div>
+<div id="tab-animal2num" class="tab-panel">
+  <label class="flabel">Escolha o animal</label>
+  <select id="inp-animal" onchange="convertA2N()">
+    <option value="">— Selecione —</option>
+    ${BICHO.map(b=>`<option value="${b.grupo}">${b.emoji} ${b.animal}</option>`).join('')}
+  </select>
+  <div id="res-a2n" class="result-box"></div>
+</div>`}
+
+function switchTab(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  const btns=document.querySelectorAll('.tab-btn');
+  if(id==='num2animal')btns[0].classList.add('active');else btns[1].classList.add('active');
+}
+
+function convertN2A(){
+  const v=document.getElementById('inp-num').value;
+  const box=document.getElementById('res-n2a');
+  if(v===''||v<0||v>99){box.classList.remove('show');return}
+  const b=bichoByNum(parseInt(v));
+  if(!b){box.classList.remove('show');return}
+  box.innerHTML=`<div class="result-emoji">${b.emoji}</div><div class="result-name">${b.animal}</div><div class="result-sub">Grupo ${b.grupo} · ${fmtNums(b)}</div>`;
+  box.classList.remove('show');void box.offsetWidth;box.classList.add('show');
+}
+function convertA2N(){
+  const v=document.getElementById('inp-animal').value;
+  const box=document.getElementById('res-a2n');
+  if(!v){box.classList.remove('show');return}
+  const b=BICHO.find(x=>x.grupo===parseInt(v));
+  if(!b)return;
+  box.innerHTML=`<div class="result-emoji">${b.emoji}</div><div class="result-name">${b.animal}</div><div class="result-sub">Grupo ${b.grupo} · ${fmtNums(b)}</div>`;
+  box.classList.remove('show');void box.offsetWidth;box.classList.add('show');
+}
+
+// ===== QUIZ =====
+let quizState={};let quizTimer=null;
+let _mode='normal',_qtype='num',_qcount=10;
+
+function renderQuizSetup(){return`
+<div class="modal-title">🧠 Quiz do Bicho</div>
+<div class="modal-sub">Escolha o modo e teste seus conhecimentos!</div>
+<div class="mode-selector">
+  <button class="mode-btn selected" id="mode-normal" onclick="selMode('normal')"><span class="mode-emoji">🏆</span>Normal<br><small>Com pontuação</small></button>
+  <button class="mode-btn" id="mode-treino" onclick="selMode('treino')"><span class="mode-emoji">📚</span>Treino<br><small>Sem pressão</small></button>
+  <button class="mode-btn" id="mode-rapido" onclick="selMode('rapido')"><span class="mode-emoji">⚡</span>Rápido<br><small>Contra o tempo</small></button>
+  <button class="mode-btn" id="mode-ranking" onclick="showQRanking()"><span class="mode-emoji">📊</span>Ranking<br><small>Top 10</small></button>
+</div>
+<label class="flabel" style="margin-bottom:8px">Tipo de pergunta</label>
+<div class="tabs" style="margin-bottom:16px">
+  <button class="tab-btn active" id="qt-num" onclick="selQType('num')">🔢 Nº → Animal</button>
+  <button class="tab-btn" id="qt-animal" onclick="selQType('animal')">🐾 Animal → Nº</button>
+  <button class="tab-btn" id="qt-mix" onclick="selQType('mix')">🎲 Misto</button>
+</div>
+<label class="flabel" style="margin-bottom:8px">Quantas perguntas?</label>
+<div class="q-count-row">
+  ${[5,10,15,25].map(n=>`<button class="tab-btn${n===10?' active':''}" onclick="selQCount(${n},this)">${n}</button>`).join('')}
+</div>
+<button class="btn btn-primary" onclick="startQuiz()">🎮 Iniciar Quiz</button>`}
+
+function selMode(m){_mode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));const el=document.getElementById('mode-'+m);if(el)el.classList.add('selected')}
+function selQType(t){_qtype=t;document.querySelectorAll('[id^="qt-"]').forEach(b=>b.classList.remove('active'));const el=document.getElementById('qt-'+t);if(el)el.classList.add('active')}
+function selQCount(n,el){_qcount=n;el.closest('div').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active')}
+
+function startQuiz(){
+  const qs=[];const types=_qtype==='mix'?['num','animal']:[_qtype];
+  for(let i=0;i<_qcount;i++){const b=BICHO[Math.floor(Math.random()*BICHO.length)];const t=types[Math.floor(Math.random()*types.length)];qs.push({bicho:b,type:t})}
+  quizState={questions:qs,current:0,score:0,mode:_mode};
+  renderQQ();
+}
+
+function renderQQ(){
+  const q=quizState.questions[quizState.current];
+  const total=quizState.questions.length;
+  const pct=(quizState.current/total)*100;
+  const wrongs=sample(BICHO.filter(b=>b.grupo!==q.bicho.grupo),3);
+  const opts=sample([q.bicho,...wrongs],4);
+  const isRapido=quizState.mode==='rapido';
+
+  document.getElementById('toolRender').innerHTML=`
+<div class="quiz-score-bar">
+  <div class="score-item"><span class="score-val">${quizState.current+1}/${total}</span><span class="score-lbl">Pergunta</span></div>
+  <div class="score-item"><span class="score-val" style="color:var(--green)">${quizState.score}</span><span class="score-lbl">Acertos</span></div>
+  ${isRapido?`<div class="score-item"><span class="score-val" id="qtimer" style="color:var(--coral)">10</span><span class="score-lbl">Seg</span></div>`:''}
+</div>
+<div class="quiz-progress"><div class="quiz-progress-fill" style="width:${pct}%"></div></div>
+${isRapido?`<div class="timer-bar"><div class="timer-bar-fill" id="timerFill" style="width:100%"></div></div>`:''}
+<div class="quiz-question">${q.type==='num'?`Qual animal é o número <strong style="color:var(--coral)">${String(q.bicho.numeros[0]).padStart(2,'0')}</strong>?`:`Qual o número do <strong style="color:var(--coral)">${q.bicho.animal}</strong> ${q.bicho.emoji}?`}</div>
+<div class="quiz-hint">${q.type==='num'?'Escolha o animal correto':'Escolha os números corretos'}</div>
+<div class="quiz-options" id="qopts">
+  ${opts.map(o=>`<button class="quiz-opt" onclick="answerQ(this,'${o.grupo}','${q.bicho.grupo}')">
+    <span class="quiz-opt-emoji">${o.emoji}</span>
+    ${q.type==='num'?o.animal:fmtNums(o)}
+  </button>`).join('')}
+</div>
+<div class="quiz-feedback" id="qfeedback"></div>`;
+
+  if(isRapido)startQTimer();
+}
+
+function startQTimer(){
+  clearQuizTimer();
+  let t=10;
+  quizTimer=setInterval(()=>{
+    t--;
+    const el=document.getElementById('qtimer');
+    const fill=document.getElementById('timerFill');
+    if(el)el.textContent=t;
+    if(fill)fill.style.width=(t/10*100)+'%';
+    if(t<=0){clearQuizTimer();autoSkip();}
+  },1000);
+}
+function clearQuizTimer(){if(quizTimer){clearInterval(quizTimer);quizTimer=null}}
+function autoSkip(){
+  const fb=document.getElementById('qfeedback');
+  if(fb){fb.textContent='⏰ Tempo esgotado!';fb.className='quiz-feedback wrong'}
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.disabled=true);
+  setTimeout(nextQ,1200);
+}
+
+function answerQ(btn,chosen,correct){
+  clearQuizTimer();
+  const fb=document.getElementById('qfeedback');
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.disabled=true);
+  if(chosen===correct){
+    btn.classList.add('correct');
+    quizState.score++;
+    if(fb){fb.textContent='✅ Correto!';fb.className='quiz-feedback correct'}
+  }else{
+    btn.classList.add('wrong');
+    document.querySelectorAll('.quiz-opt').forEach(b=>{if(b.getAttribute('onclick').includes(`'${correct}'`))b.classList.add('correct')});
+    if(fb){fb.textContent='❌ Errou!';fb.className='quiz-feedback wrong'}
+  }
+  setTimeout(nextQ,1200);
+}
+
+function nextQ(){
+  quizState.current++;
+  if(quizState.current>=quizState.questions.length)showQResult();
+  else renderQQ();
+}
+
+function showQResult(){
+  const s=quizState.score,t=quizState.questions.length,pct=Math.round(s/t*100);
+  const emoji=pct>=80?'🏆':pct>=50?'👍':'😅';
+  const msg=pct>=80?'Você é expert no bicho!':pct>=50?'Indo bem! Continue praticando.':'Ainda tá aprendendo... tá ótimo!';
+  document.getElementById('toolRender').innerHTML=`
+<div style="text-align:center;margin-bottom:20px">
+  <div style="font-size:3rem;margin-bottom:8px">${emoji}</div>
+  <div class="modal-title" style="justify-content:center">${s}/${t}</div>
+  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${msg}</div>
+  <div style="font-size:11px;color:var(--muted)">${pct}% de acerto</div>
+</div>
+<div class="stat-row">
+  <div class="stat-pill"><span class="sp-val">${s}</span><span class="sp-lbl">Acertos</span></div>
+  <div class="stat-pill"><span class="sp-val">${t-s}</span><span class="sp-lbl">Erros</span></div>
+  <div class="stat-pill"><span class="sp-val">${pct}%</span><span class="sp-lbl">Precisão</span></div>
+</div>
+${quizState.mode==='normal'?`
+<div style="margin-bottom:12px">
+  <label class="flabel">Seu nome pro ranking</label>
+  <input type="text" id="rk-name" placeholder="Ex: João" maxlength="20">
+</div>
+<button class="btn btn-teal" style="margin-bottom:10px" onclick="saveQRanking(${s},${t})">💾 Salvar no Ranking</button>`:''}
+<button class="btn btn-secondary" onclick="document.getElementById('toolRender').innerHTML=renderQuizSetup()">🔄 Jogar Novamente</button>`;
+  if(pct>=80)spawnConfetti();
+}
+
+function saveQRanking(score,total){
+  const name=(document.getElementById('rk-name').value.trim()||'Anônimo');
+  const r=loadQRanking();
+  r.push({name,score,total,pct:Math.round(score/total*100),date:Date.now()});
+  r.sort((a,b)=>b.score-a.score);
+  localStorage.setItem('bichoquiz_rank',JSON.stringify(r.slice(0,10)));
+  alert('✅ Salvo no ranking!');showQRanking();
+}
+function loadQRanking(){try{return JSON.parse(localStorage.getItem('bichoquiz_rank')||'[]')}catch(e){return[]}}
+
+function showQRanking(){
+  const r=loadQRanking();
+  const medals=['gold','silver','bronze'];
+  const rows=r.length===0?'<p style="text-align:center;color:var(--muted);padding:30px 0">Nenhum resultado ainda!</p>':
+    r.map((e,i)=>`<li><span class="rk-pos ${medals[i]||''}">${['🥇','🥈','🥉'][i]||i+1}</span><span class="rk-name">${e.name}</span><span style="font-size:11px;color:var(--muted)">${e.score}/${e.total}</span><span class="rk-score">${e.pct}%</span></li>`).join('');
+  document.getElementById('toolRender').innerHTML=`
+<div class="modal-title">📊 Ranking</div>
+<div class="modal-sub">Top 10 salvo no seu celular</div>
+<ul class="ranking-list">${rows}</ul>
+<button class="btn btn-secondary" style="margin-top:12px" onclick="document.getElementById('toolRender').innerHTML=renderQuizSetup()">← Voltar</button>`;
+}
+
+// ===== PALPITE =====
+function renderPalpite(){
+  const b=BICHO[Math.floor(Math.random()*BICHO.length)];
+  const num=b.numeros[Math.floor(Math.random()*4)];
+  return`
+<div class="modal-title">🎲 Gerador de Palpite</div>
+<div class="modal-sub">Deixe o universo decidir. Só por diversão!</div>
+<div class="palpite-card" id="palpite-card">
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted)">Seu palpite do dia</div>
+  <div class="palpite-big">${String(num).padStart(2,'0')}</div>
+  <div style="font-size:2.5rem">${b.emoji}</div>
+  <div class="palpite-animal">${b.animal}</div>
+  <div class="palpite-nums">Grupo ${b.grupo} · ${fmtNums(b)}</div>
+  <button class="btn btn-primary" style="max-width:200px" onclick="refreshPalpite()">🎰 Gerar Outro</button>
+</div>
+<p style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px">⚠️ Só diversão. Não jogue dinheiro real!</p>`}
+
+function refreshPalpite(){
+  const b=BICHO[Math.floor(Math.random()*BICHO.length)];
+  const num=b.numeros[Math.floor(Math.random()*4)];
+  const card=document.getElementById('palpite-card');
+  card.style.opacity='0';card.style.transform='scale(.92)';card.style.transition='all .2s';
+  setTimeout(()=>{
+    card.innerHTML=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted)">Seu palpite do dia</div>
+<div class="palpite-big">${String(num).padStart(2,'0')}</div><div style="font-size:2.5rem">${b.emoji}</div>
+<div class="palpite-animal">${b.animal}</div><div class="palpite-nums">Grupo ${b.grupo} · ${fmtNums(b)}</div>
+<button class="btn btn-primary" style="max-width:200px" onclick="refreshPalpite()">🎰 Gerar Outro</button>`;
+    card.style.opacity='1';card.style.transform='scale(1)';
+  },200);
+}
+
+// ===== TABELA =====
+function renderTabela(){
+  return`
+<div class="modal-title">📋 Tabela Completa</div>
+<div class="modal-sub">Os 25 grupos do Jogo do Bicho. Toque para ver detalhes.</div>
+<div class="cell-detail" id="cell-detail"></div>
+<div class="animal-table">${BICHO.map(b=>`
+  <div class="animal-cell" onclick="showCell('${b.animal}','${b.emoji}',${b.grupo},'${fmtNums(b)}')">
+    <span class="cell-emoji">${b.emoji}</span>
+    <span class="cell-name">${b.animal}</span>
+    <span class="cell-nums">${fmtNums(b)}</span>
+  </div>`).join('')}
+</div>`}
+
+function showCell(animal,emoji,grupo,nums){
+  const d=document.getElementById('cell-detail');
+  d.innerHTML=`<div style="font-size:2.2rem;margin-bottom:6px">${emoji}</div>
+<div style="font-family:var(--syne);font-size:18px;font-weight:800;color:var(--coral);margin-bottom:2px">${animal}</div>
+<div style="font-size:12px;color:var(--muted)">Grupo ${grupo} · ${nums}</div>`;
+  d.classList.remove('show');void d.offsetWidth;d.classList.add('show');
+  d.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ===== ANIMAL DO DIA =====
+function renderAnimalDia(){
+  const today=new Date();
+  const seed=today.getFullYear()*10000+(today.getMonth()+1)*100+today.getDate();
+  const b=BICHO[seed%BICHO.length];
+  const fortune=fortunes[seed%fortunes.length];
+  const dateStr=today.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  return`
+<div class="modal-title">📅 Animal do Dia</div>
+<div class="modal-sub">${dateStr}</div>
+<div class="animal-dia">
+  <div class="animal-dia-emoji">${b.emoji}</div>
+  <div class="animal-dia-name">${b.animal}</div>
+  <div class="animal-dia-desc">Grupo ${b.grupo} · ${fmtNums(b)}</div>
+</div>
+<div class="fortune-box">
+  <div class="fortune-label">🔮 Mensagem do dia</div>
+  <div class="fortune-text">"${fortune}"</div>
+</div>
+<p style="text-align:center;font-size:11px;color:var(--muted)">O animal muda todo dia à meia-noite 🌙</p>`}
+
+// ===== CONFETTI =====
+function spawnConfetti(){
+  const colors=['#f4845f','#4ecdc4','#ffe66d','#a29bfe','#fd79a8','#2ecc71'];
+  for(let i=0;i<24;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    p.style.cssText=`left:${20+Math.random()*60}%;top:${20+Math.random()*20}%;background:${colors[Math.floor(Math.random()*colors.length)]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${.8+Math.random()*.6}s;animation-delay:${Math.random()*.2}s`;
+    document.body.appendChild(p);
+    p.addEventListener('animationend',()=>p.remove());
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTool()});
+</script>
+</body>
+</html>
