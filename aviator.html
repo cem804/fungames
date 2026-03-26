@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aviator — VériBed Cassino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   AVIATOR — VériBed Casino
+   Aesthetic: Dark cockpit / radar screen. Glowing green on black.
+   Terminal meets gambling hall. Monospace for numbers, brutal grid.
+   ============================================================ */
+
+:root {
+  --bg:      #060810;
+  --surface: #0d0f1a;
+  --s2:      #131525;
+  --s3:      #1a1d2e;
+  --border:  rgba(255,255,255,0.07);
+  --text:    #e8eaf6;
+  --muted:   #555872;
+  --dim:     #353848;
+
+  /* Multiplier colors */
+  --col-low:    #5bc8f5;   /* < 2x — azul claro */
+  --col-med:    #9f7aea;   /* 2x–10x — roxo */
+  --col-high:   #f687b3;   /* 10x–100x — rosa */
+  --col-epic:   #fc8181;   /* 100x+ — vermelho */
+
+  --green:   #48bb78;
+  --red:     #fc8181;
+  --accent:  #e8ff57;
+  --plane:   #fff;
+
+  --radius: 14px;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Scanline overlay */
+body::before {
+  content:''; position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  pointer-events:none; z-index:9999; opacity:.4;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.logo-back {
+  display: flex; align-items: center; gap: 10px;
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .78rem; font-weight: 600; color: var(--muted);
+  text-decoration: none; transition: color .15s;
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 50px;
+  background: transparent;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.back-link:hover { color: var(--text); border-color: rgba(255,255,255,.15); }
+
+.logo-txt {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem; font-weight: 800;
+  color: var(--text);
+}
+.logo-txt span { color: var(--accent); }
+
+.balance-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 50px; padding: 8px 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: .85rem; font-weight: 500; color: var(--accent);
+}
+.balance-pill .bal-label {
+  font-size:.68rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--muted); font-family:'DM Sans',sans-serif;
+}
+
+/* ============================================================
+   HISTORY BAR (top 30)
+   ============================================================ */
+.history-bar {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 8px 0 10px;
+  scrollbar-width: none;
+  margin-bottom: 12px;
+  flex-wrap: nowrap;
+}
+.history-bar::-webkit-scrollbar { display:none; }
+
+.hist-chip {
+  flex-shrink: 0;
+  font-family: 'DM Mono', monospace;
+  font-size: .72rem; font-weight: 500;
+  padding: 4px 9px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.07);
+  white-space: nowrap;
+  transition: opacity .3s;
+}
+.hist-chip.low  { background: rgba(91,200,245,.12); color: var(--col-low);  border-color: rgba(91,200,245,.2);  }
+.hist-chip.med  { background: rgba(159,122,234,.12); color: var(--col-med); border-color: rgba(159,122,234,.2); }
+.hist-chip.high { background: rgba(246,135,179,.12); color: var(--col-high);border-color: rgba(246,135,179,.2); }
+.hist-chip.epic { background: rgba(252,129,129,.12); color: var(--col-epic);border-color: rgba(252,129,129,.2); }
+.hist-chip.new  { animation: chipIn .35s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes chipIn { from{transform:scale(0.6);opacity:0;} to{transform:scale(1);opacity:1;} }
+
+/* ============================================================
+   MAIN GRID
+   ============================================================ */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 700px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   GAME CANVAS AREA
+   ============================================================ */
+.game-area {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 320px;
+  background: transparent;
+}
+
+/* Multiplier display overlay */
+.mult-display {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.mult-val {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  transition: color .15s;
+  text-shadow: 0 0 40px currentColor;
+}
+.mult-label {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  opacity: .5;
+  margin-top: 4px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Crash overlay */
+.crash-overlay {
+  position: absolute; inset: 0;
+  display: none;
+  align-items: center; justify-content: center;
+  background: rgba(252,129,129,.06);
+  border-radius: 18px;
+  animation: crashPulse .6s ease;
+}
+.crash-overlay.show { display: flex; }
+@keyframes crashPulse {
+  0%   { background: rgba(252,129,129,.25); }
+  100% { background: rgba(252,129,129,.06); }
+}
+.crash-text {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.8rem, 6vw, 3.5rem);
+  font-weight: 800;
+  color: var(--red);
+  text-shadow: 0 0 40px rgba(252,129,129,.6);
+  text-align: center;
+  animation: crashIn .4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes crashIn { from{transform:scale(0.5) rotate(-5deg);opacity:0;} to{transform:scale(1) rotate(0);opacity:1;} }
+
+/* Waiting overlay */
+.wait-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px;
+}
+.wait-overlay.hide { display: none; }
+.wait-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.07);
+  border-top-color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.wait-txt { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.wait-count { font-family: 'DM Mono', monospace; font-size: 1.2rem; font-weight: 500; color: var(--accent); }
+
+/* ============================================================
+   GAME STATUS BAR
+   ============================================================ */
+.status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-size: .78rem; font-weight: 600;
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block; margin-right: 6px;
+}
+.dot-wait  { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.dot-fly   { background: var(--green);  box-shadow: 0 0 8px var(--green); animation: blink 1s ease infinite; }
+.dot-crash { background: var(--red);    box-shadow: 0 0 8px var(--red); }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+.round-info { color: var(--muted); font-family: 'DM Mono', monospace; font-size: .7rem; }
+
+/* ============================================================
+   SIDEBAR — BETS
+   ============================================================ */
+.sidebar {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.bet-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+}
+
+.bet-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.bet-num {
+  font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+}
+.bet-result {
+  font-family: 'DM Mono', monospace;
+  font-size: .82rem; font-weight: 500;
+  padding: 3px 10px; border-radius: 6px;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+}
+.bet-result.won  { background: rgba(72,187,120,.15); color: var(--green); border-color: rgba(72,187,120,.3); }
+.bet-result.lost { background: rgba(252,129,129,.12); color: var(--red); border-color: rgba(252,129,129,.3); }
+
+/* Amount row */
+.amount-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+.amount-inp {
+  flex: 1; padding: 10px 12px;
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: .95rem; font-weight: 500;
+  outline: none; transition: border-color .15s;
+}
+.amount-inp:focus { border-color: rgba(232,255,87,.3); }
+
+.quick-btns { display: flex; gap: 4px; }
+.qbtn {
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--s3); border: 1px solid var(--border);
+  color: var(--muted); font-size: .72rem; font-weight: 600;
+  cursor: pointer; transition: all .13s;
+  font-family: 'DM Sans', sans-serif;
+}
+.qbtn:hover { background: rgba(255,255,255,.08); color: var(--text); }
+
+/* Auto cashout row */
+.auto-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.auto-inp {
+  width: 90px; padding: 8px 10px;
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: .82rem; font-weight: 500;
+  outline: none; transition: border-color .15s;
+}
+.auto-inp:focus { border-color: rgba(159,122,234,.4); }
+.auto-label { font-size: .72rem; font-weight: 600; color: var(--muted); }
+
+/* Toggle */
+.toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.toggle {
+  width: 36px; height: 20px; border-radius: 10px;
+  background: var(--s3); border: 1px solid var(--border);
+  cursor: pointer; position: relative; transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--green); border-color: var(--green); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; top: 2px; left: 2px;
+  transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+.toggle.on::after { transform: translateX(16px); }
+.toggle-label { font-size: .72rem; font-weight: 600; color: var(--muted); }
+
+/* Main bet button */
+.bet-btn {
+  width: 100%; padding: 13px;
+  border-radius: 10px; border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .95rem; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  position: relative; overflow: hidden;
+}
+.bet-btn.state-bet {
+  background: var(--accent); color: #000;
+  box-shadow: 0 4px 20px rgba(232,255,87,.25);
+}
+.bet-btn.state-bet:hover { box-shadow: 0 6px 28px rgba(232,255,87,.4); transform: translateY(-1px); }
+.bet-btn.state-cashout {
+  background: var(--green); color: #000;
+  box-shadow: 0 4px 20px rgba(72,187,120,.3);
+  animation: cashoutPulse 1s ease infinite;
+}
+@keyframes cashoutPulse { 0%,100%{box-shadow:0 4px 20px rgba(72,187,120,.3);} 50%{box-shadow:0 4px 30px rgba(72,187,120,.6);} }
+.bet-btn.state-wait {
+  background: var(--s3); color: var(--muted);
+  cursor: not-allowed;
+}
+.bet-btn.state-cancel {
+  background: rgba(252,129,129,.15); color: var(--red);
+  border: 1px solid rgba(252,129,129,.3);
+}
+
+.btn-sub {
+  display: block; font-size: .65rem; font-weight: 600;
+  opacity: .7; margin-top: 2px; letter-spacing: .05em;
+}
+
+/* ============================================================
+   EXTRAS: AUTO BET PANEL
+   ============================================================ */
+.auto-bet-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.abp-title {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted); margin-bottom: 12px;
+}
+.abp-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.abp-inp {
+  flex: 1; padding: 8px 10px;
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: .82rem;
+  outline: none;
+}
+.abp-inp:focus { border-color: rgba(232,255,87,.3); }
+.abp-label { font-size: .72rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.abp-btn {
+  width: 100%; padding: 10px;
+  border-radius: 8px; border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .82rem; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  margin-top: 4px;
+}
+.abp-btn.active { background: rgba(252,129,129,.15); color: var(--red); border: 1px solid rgba(252,129,129,.3); }
+.abp-btn.inactive { background: rgba(232,255,87,.12); color: var(--accent); border: 1px solid rgba(232,255,87,.2); }
+.abp-btn:hover { opacity: .85; }
+
+/* ============================================================
+   RANKING SECTION
+   ============================================================ */
+.rank-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  margin-top: 4px;
+}
+.rank-title {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted); margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.rank-list { list-style: none; }
+.rank-list li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .78rem; font-weight: 500;
+}
+.rank-list li:last-child { border-bottom: none; }
+.rk-pos { font-family: 'DM Mono', monospace; font-size: .7rem; color: var(--muted); width: 20px; }
+.rk-name { flex: 1; color: var(--text); }
+.rk-val { font-family: 'DM Mono', monospace; font-weight: 500; }
+
+/* ============================================================
+   ROUND HISTORY TABLE
+   ============================================================ */
+.round-hist {
+  grid-column: 1 / -1;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-top: 4px;
+}
+.rh-title { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:10px; }
+
+/* ============================================================
+   MISC
+   ============================================================ */
+.divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 20px;
+  font-size: .82rem; font-weight: 600; color: var(--text);
+  z-index: 1000; pointer-events: none;
+  animation: toastIn .3s ease, toastOut .3s ease 2.4s forwards;
+}
+.toast.win { border-color: rgba(72,187,120,.4); color: var(--green); }
+.toast.lose { border-color: rgba(252,129,129,.4); color: var(--red); }
+@keyframes toastIn  { from{opacity:0;transform:translate(-50%,14px);} to{opacity:1;transform:translate(-50%,0);} }
+@keyframes toastOut { from{opacity:1;} to{opacity:0;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo-back">
+      <button class="back-link" onclick="window.location.href='index.html'">← VériBed</button>
+      <span class="logo-txt">✈️ <span>Aviator</span></span>
+    </div>
+    <div class="balance-pill">
+      <span class="bal-label">Saldo</span>
+      <span id="balance-display">1000</span> 🪙
+    </div>
+  </div>
+
+  <!-- HISTORY BAR -->
+  <div class="history-bar" id="history-bar">
+    <!-- populated by JS -->
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: GAME AREA -->
+    <div>
+      <div class="game-area">
+
+        <!-- Canvas for curve -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Multiplier overlay -->
+        <div class="mult-display" id="mult-display">
+          <div class="mult-val" id="mult-val" style="color:var(--col-low)">1.00<span style="font-size:.5em">x</span></div>
+          <div class="mult-label" id="mult-label">Voando...</div>
+        </div>
+
+        <!-- Crash overlay -->
+        <div class="crash-overlay" id="crash-overlay">
+          <div class="crash-text" id="crash-text">💥 CRASHED!<br><span id="crash-at" style="font-size:.55em;opacity:.8"></span></div>
+        </div>
+
+        <!-- Waiting overlay -->
+        <div class="wait-overlay" id="wait-overlay">
+          <div class="wait-ring"></div>
+          <div class="wait-txt">Próxima rodada em</div>
+          <div class="wait-count" id="wait-count">5</div>
+        </div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <div style="display:flex;align-items:center">
+            <span class="status-dot dot-wait" id="status-dot"></span>
+            <span id="status-text" style="font-size:.78rem;font-weight:600;color:var(--muted)">Aguardando...</span>
+          </div>
+          <span class="round-info" id="round-info">Rodada #1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: BETS SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- BET 1 -->
+      <div class="bet-card" id="bet-card-0">
+        <div class="bet-card-header">
+          <span class="bet-num">Aposta 1</span>
+          <span class="bet-result" id="bet-result-0">—</span>
+        </div>
+
+        <div class="amount-row">
+          <input type="number" class="amount-inp" id="bet-amount-0" value="50" min="1" max="1000" step="1">
+          <div class="quick-btns">
+            <button class="qbtn" onclick="adjBet(0,.5)">½</button>
+            <button class="qbtn" onclick="adjBet(0,2)">2×</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:4px;margin-bottom:10px">
+          <button class="qbtn" onclick="setBet(0,10)">10</button>
+          <button class="qbtn" onclick="setBet(0,25)">25</button>
+          <button class="qbtn" onclick="setBet(0,50)">50</button>
+          <button class="qbtn" onclick="setBet(0,100)">100</button>
+        </div>
+
+        <div class="auto-row">
+          <span class="auto-label">Auto sacar em</span>
+          <input type="number" class="auto-inp" id="auto-cashout-0" value="2.00" min="1.10" max="1000" step="0.1" placeholder="2.00">
+          <span class="auto-label">x</span>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle" id="toggle-auto-0" onclick="toggleAuto(0)"></div>
+          <span class="toggle-label">Auto cashout ativo</span>
+        </div>
+
+        <button class="bet-btn state-bet" id="bet-btn-0" onclick="handleBetBtn(0)">
+          Apostar
+          <span class="btn-sub" id="bet-btn-sub-0">50 🪙</span>
+        </button>
+      </div>
+
+      <!-- BET 2 -->
+      <div class="bet-card" id="bet-card-1">
+        <div class="bet-card-header">
+          <span class="bet-num">Aposta 2</span>
+          <span class="bet-result" id="bet-result-1">—</span>
+        </div>
+        <div class="amount-row">
+          <input type="number" class="amount-inp" id="bet-amount-1" value="25" min="1" max="1000" step="1">
+          <div class="quick-btns">
+            <button class="qbtn" onclick="adjBet(1,.5)">½</button>
+            <button class="qbtn" onclick="adjBet(1,2)">2×</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:10px">
+          <button class="qbtn" onclick="setBet(1,10)">10</button>
+          <button class="qbtn" onclick="setBet(1,25)">25</button>
+          <button class="qbtn" onclick="setBet(1,50)">50</button>
+          <button class="qbtn" onclick="setBet(1,100)">100</button>
+        </div>
+        <div class="auto-row">
+          <span class="auto-label">Auto sacar em</span>
+          <input type="number" class="auto-inp" id="auto-cashout-1" value="1.50" min="1.10" max="1000" step="0.1" placeholder="1.50">
+          <span class="auto-label">x</span>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle" id="toggle-auto-1" onclick="toggleAuto(1)"></div>
+          <span class="toggle-label">Auto cashout ativo</span>
+        </div>
+        <button class="bet-btn state-bet" id="bet-btn-1" onclick="handleBetBtn(1)">
+          Apostar
+          <span class="btn-sub" id="bet-btn-sub-1">25 🪙</span>
+        </button>
+      </div>
+
+      <!-- AUTO BET PANEL -->
+      <div class="auto-bet-panel">
+        <div class="abp-title">🤖 Aposta automática</div>
+        <div class="abp-row">
+          <span class="abp-label">Valor:</span>
+          <input type="number" class="abp-inp" id="auto-amount" value="10" min="1" max="500">
+          <span class="abp-label">🪙</span>
+        </div>
+        <div class="abp-row">
+          <span class="abp-label">Sacar em:</span>
+          <input type="number" class="abp-inp" id="auto-target" value="1.8" min="1.1" max="100" step="0.1">
+          <span class="abp-label">x</span>
+        </div>
+        <div class="abp-row">
+          <span class="abp-label">Rodadas:</span>
+          <input type="number" class="abp-inp" id="auto-rounds" value="10" min="1" max="100">
+        </div>
+        <button class="abp-btn inactive" id="auto-bet-btn" onclick="toggleAutoBet()">▶ Iniciar auto-aposta</button>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- RANKING -->
+    <div class="rank-section" id="rank-section">
+      <div class="rank-title">
+        🏆 Máximo arrancado
+        <span style="font-size:.68rem;color:var(--dim);cursor:pointer" onclick="loadRanking()">↻ Atualizar</span>
+      </div>
+      <ul class="rank-list" id="rank-list">
+        <li style="color:var(--muted);font-size:.78rem">Carregando...</li>
+      </ul>
+    </div>
+
+  </div><!-- /main-grid -->
+</div><!-- /wrap -->
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, orderBy, query, limit } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAz5pER3LbB0m8TN-8seJ0-QEdvIC3bsow",
+  authDomain: "templarios-12195.firebaseapp.com",
+  projectId: "templarios-12195",
+  storageBucket: "templarios-12195.firebasestorage.app",
+  messagingSenderId: "980758186678",
+  appId: "1:980758186678:web:07c125ccfc43e5f359f417"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* expose to global scope for game logic below */
+window._fbDb = db;
+window._fbAdd = (data) => addDoc(collection(db, "aviator_ranking"), data);
+window._fbGet = async () => {
+  try {
+    const q = query(collection(db, "aviator_ranking"), orderBy("mult","desc"), limit(10));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data());
+  } catch(e) { return []; }
+};
+</script>
+
+<script>
+/* ============================================================
+   AVIATOR GAME ENGINE
+   ============================================================ */
+
+// ── STATE ────────────────────────────────────────────────────
+const STATE = {
+  balance:    0,
+  round:      1,
+  phase:      'wait',  // 'wait' | 'fly' | 'crashed'
+  mult:       1.00,
+  crashAt:    1.00,
+  startTime:  0,
+  history:    [],      // last 30 rounds
+
+  // Per-bet state (2 slots)
+  bets: [
+    { active:false, amount:0, cashedOut:false, cashoutMult:0, autoOn:false },
+    { active:false, amount:0, cashedOut:false, cashoutMult:0, autoOn:false },
+  ],
+
+  // Auto-bet
+  autoBet:        false,
+  autoBetRoundsLeft: 0,
+};
+
+// ── BALANCE (daily reset) ────────────────────────────────────
+function initBalance() {
+  const today = new Date().toDateString();
+  const saved = localStorage.getItem('av_balance');
+  const savedDate = localStorage.getItem('av_balance_date');
+  if (savedDate !== today) {
+    STATE.balance = 1000;
+    localStorage.setItem('av_balance_date', today);
+    saveBalance();
+  } else {
+    STATE.balance = saved ? parseInt(saved) : 1000;
+  }
+  renderBalance();
+}
+function saveBalance() {
+  localStorage.setItem('av_balance', STATE.balance);
+}
+function renderBalance() {
+  document.getElementById('balance-display').textContent = STATE.balance.toLocaleString('pt-BR');
+}
+
+// ── CRASH PROBABILITY ENGINE ─────────────────────────────────
+/*
+ Distribution:
+ 3%   → instant crash (1.00x)
+ 45%  → 1.01–1.20x
+ 30%  → 1.20–2.00x
+ 15%  → 2.00–5.00x
+ 5%   → 5.00–10.00x
+ 1.5% → 10.00–50.00x
+ 0.4% → 50.00–200.00x
+ 0.1% → 200.00–7000.00x
+*/
+function generateCrashPoint() {
+  const r = Math.random() * 100;
+  if (r < 3)        return 1.00;
+  if (r < 48)       return rng(1.01, 1.20);
+  if (r < 78)       return rng(1.20, 2.00);
+  if (r < 93)       return rng(2.00, 5.00);
+  if (r < 98)       return rng(5.00, 10.00);
+  if (r < 99.5)     return rng(10.00, 50.00);
+  if (r < 99.9)     return rng(50.00, 200.00);
+  return rng(200.00, 7000.00);
+}
+function rng(min, max) {
+  return parseFloat((min + Math.random() * (max - min)).toFixed(2));
+}
+
+// ── HISTORY (generate 30 fake ones on first load) ────────────
+function initHistory() {
+  const stored = localStorage.getItem('av_history');
+  if (stored) {
+    STATE.history = JSON.parse(stored);
+  } else {
+    // Generate 30 history entries biased toward looking "generous" (marketing lol)
+    const fakeHist = [];
+    // Force a couple of big ones to look attractive
+    const bigOnes = [7.5, 12.3, 2.4, 3.1, 1.8, 25.0, 1.05, 4.7, 1.12, 8.9,
+                     1.32, 2.0, 1.01, 6.4, 1.55, 3.3, 47.2, 1.08, 2.9, 1.4,
+                     5.5, 1.2, 15.0, 1.65, 2.2, 1.03, 9.1, 3.8, 1.18, 100.0];
+    STATE.history = bigOnes;
+    saveHistory();
+  }
+  renderHistory();
+}
+function saveHistory() {
+  localStorage.setItem('av_history', JSON.stringify(STATE.history.slice(0,30)));
+}
+function addHistory(mult) {
+  STATE.history.unshift(mult);
+  if (STATE.history.length > 30) STATE.history = STATE.history.slice(0,30);
+  saveHistory();
+  renderHistory();
+}
+function multClass(m) {
+  if (m >= 100) return 'epic';
+  if (m >= 10)  return 'high';
+  if (m >= 2)   return 'med';
+  return 'low';
+}
+function renderHistory() {
+  const bar = document.getElementById('history-bar');
+  bar.innerHTML = STATE.history.map((m, i) => {
+    const cls = multClass(m);
+    const newCls = i === 0 ? ' new' : '';
+    return `<span class="hist-chip ${cls}${newCls}">${m.toFixed(2)}x</span>`;
+  }).join('');
+}
+
+// ── CANVAS CURVE ─────────────────────────────────────────────
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let animFrame = null;
+
+function resizeCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// curve points accumulated during flight
+let curvePoints = [];
+let planeX = 0, planeY = 0;
+
+function drawFrame() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (STATE.phase === 'wait' || curvePoints.length < 2) return;
+
+  const padL = 40, padB = 40, padR = 20, padT = 20;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  // normalize points to canvas
+  const maxX = curvePoints[curvePoints.length-1][0];
+  const maxY = Math.max(...curvePoints.map(p=>p[1]), 2);
+
+  function toCanvasX(x) { return padL + (x / maxX) * plotW; }
+  function toCanvasY(y) { return H - padB - ((y - 1) / (maxY - 1)) * plotH; }
+
+  // Grid lines (subtle)
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let g = 1; g <= 4; g++) {
+    const y = H - padB - (g/4)*plotH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W-padR, y); ctx.stroke();
+  }
+
+  // determine color from current multiplier
+  let lineColor;
+  const m = STATE.mult;
+  if (m >= 100)     lineColor = '#fc8181';
+  else if (m >= 10) lineColor = '#f687b3';
+  else if (m >= 2)  lineColor = '#9f7aea';
+  else              lineColor = '#5bc8f5';
+
+  // Gradient fill under curve
+  const grad = ctx.createLinearGradient(0, padT, 0, H-padB);
+  grad.addColorStop(0, lineColor.replace(')', ', 0.18)').replace('rgb', 'rgba').replace('#','rgba(').replace('rgba(','rgba(').replace('(','('));
+  grad.addColorStop(1, 'transparent');
+
+  // Build path
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(curvePoints[0][0]), toCanvasY(curvePoints[0][1]));
+  for (let i = 1; i < curvePoints.length; i++) {
+    ctx.lineTo(toCanvasX(curvePoints[i][0]), toCanvasY(curvePoints[i][1]));
+  }
+  // Close fill
+  const lastPt = curvePoints[curvePoints.length-1];
+  ctx.lineTo(toCanvasX(lastPt[0]), H-padB);
+  ctx.lineTo(toCanvasX(curvePoints[0][0]), H-padB);
+  ctx.closePath();
+
+  // Parse color for fill
+  ctx.fillStyle = hexToRgba(lineColor, 0.08);
+  ctx.fill();
+
+  // Draw line
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(curvePoints[0][0]), toCanvasY(curvePoints[0][1]));
+  for (let i = 1; i < curvePoints.length; i++) {
+    ctx.lineTo(toCanvasX(curvePoints[i][0]), toCanvasY(curvePoints[i][1]));
+  }
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Glow line
+  ctx.shadowColor = lineColor;
+  ctx.shadowBlur = 12;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Plane emoji at tip
+  planeX = toCanvasX(lastPt[0]);
+  planeY = toCanvasY(lastPt[1]);
+  ctx.font = '22px serif';
+  ctx.fillText('✈️', planeX - 11, planeY + 8);
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── MULTIPLIER DISPLAY ───────────────────────────────────────
+function setMultDisplay(m, phase) {
+  const el = document.getElementById('mult-val');
+  const lbl = document.getElementById('mult-label');
+  el.textContent = m.toFixed(2) + 'x';
+
+  // Color by tier
+  let color;
+  if (m >= 100)    color = 'var(--col-epic)';
+  else if (m >= 10) color = 'var(--col-high)';
+  else if (m >= 2)  color = 'var(--col-med)';
+  else              color = 'var(--col-low)';
+  el.style.color = color;
+
+  if (phase === 'fly')     lbl.textContent = 'Voando...';
+  else if (phase === 'crashed') lbl.textContent = 'CRASHED!';
+  else lbl.textContent = '';
+}
+
+function setStatus(phase) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className = 'status-dot';
+  if (phase === 'wait') {
+    dot.classList.add('dot-wait');
+    text.textContent = 'Aguardando...';
+  } else if (phase === 'fly') {
+    dot.classList.add('dot-fly');
+    text.textContent = 'Voando!';
+  } else {
+    dot.classList.add('dot-crash');
+    text.textContent = 'Crashed!';
+  }
+}
+
+// ── GAME LOOP ────────────────────────────────────────────────
+let waitTimer = null;
+let flyRAF    = null;
+
+function startWait(seconds) {
+  STATE.phase = 'wait';
+  curvePoints = [];
+  setStatus('wait');
+
+  document.getElementById('wait-overlay').classList.remove('hide');
+  document.getElementById('crash-overlay').classList.remove('show');
+  document.getElementById('mult-display').style.opacity = '0';
+  setMultDisplay(1.00, 'wait');
+
+  let remaining = seconds;
+  document.getElementById('wait-count').textContent = remaining;
+  document.getElementById('round-info').textContent = `Rodada #${STATE.round}`;
+
+  // Handle auto-bet queueing
+  if (STATE.autoBet && STATE.autoBetRoundsLeft > 0) {
+    const amt = parseInt(document.getElementById('auto-amount').value) || 10;
+    const tgt = parseFloat(document.getElementById('auto-target').value) || 1.8;
+    // Queue on first slot
+    document.getElementById('bet-amount-0').value = amt;
+    document.getElementById('auto-cashout-0').value = tgt;
+    document.getElementById('toggle-auto-0').classList.add('on');
+    STATE.bets[0].autoOn = true;
+    if (STATE.balance >= amt) {
+      STATE.balance -= amt;
+      STATE.bets[0] = { active:true, amount:amt, cashedOut:false, cashoutMult:0, autoOn:true };
+      saveBalance(); renderBalance();
+      setBetBtnState(0, 'cashout');
+      updateBetSub(0);
+      document.getElementById('bet-result-0').textContent = `${amt}🪙 bet`;
+      document.getElementById('bet-result-0').className = 'bet-result';
+    }
+    STATE.autoBetRoundsLeft--;
+    if (STATE.autoBetRoundsLeft <= 0) {
+      STATE.autoBet = false;
+      document.getElementById('auto-bet-btn').textContent = '▶ Iniciar auto-aposta';
+      document.getElementById('auto-bet-btn').className = 'abp-btn inactive';
+    }
+  }
+
+  waitTimer = setInterval(() => {
+    remaining -= 0.1;
+    document.getElementById('wait-count').textContent = Math.max(0, Math.ceil(remaining));
+    if (remaining <= 0) {
+      clearInterval(waitTimer);
+      startFly();
+    }
+  }, 100);
+
+  drawFrame();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+function startFly() {
+  STATE.phase = 'fly';
+  STATE.mult  = 1.00;
+  STATE.startTime = performance.now();
+  STATE.crashAt   = generateCrashPoint();
+  curvePoints = [[0, 1.00]];
+
+  document.getElementById('wait-overlay').classList.add('hide');
+  document.getElementById('mult-display').style.opacity = '1';
+  setStatus('fly');
+  setMultDisplay(1.00, 'fly');
+
+  playSound('rise');
+
+  let elapsed = 0;
+  function frame(now) {
+    elapsed = (now - STATE.startTime) / 1000; // seconds
+
+    // Exponential growth: 1 + elapsed^1.7 * speed
+    const speed = 0.6;
+    STATE.mult = parseFloat((1 + Math.pow(elapsed, 1.7) * speed).toFixed(2));
+
+    // Crash check
+    if (STATE.mult >= STATE.crashAt) {
+      STATE.mult = STATE.crashAt;
+      setMultDisplay(STATE.mult, 'crashed');
+      triggerCrash();
+      return;
+    }
+
+    setMultDisplay(STATE.mult, 'fly');
+
+    // Accumulate curve
+    curvePoints.push([elapsed, STATE.mult]);
+
+    // Auto cashouts
+    for (let i = 0; i < 2; i++) {
+      const b = STATE.bets[i];
+      if (b.active && !b.cashedOut && b.autoOn) {
+        const target = parseFloat(document.getElementById(`auto-cashout-${i}`).value) || 2.0;
+        if (STATE.mult >= target) doCashout(i, true);
+      }
+    }
+
+    drawFrame();
+    flyRAF = requestAnimationFrame(frame);
+  }
+  flyRAF = requestAnimationFrame(frame);
+}
+
+function triggerCrash() {
+  STATE.phase = 'crashed';
+  cancelAnimationFrame(flyRAF);
+  setStatus('crashed');
+
+  // Force-lose all active non-cashed bets
+  for (let i = 0; i < 2; i++) {
+    const b = STATE.bets[i];
+    if (b.active && !b.cashedOut) {
+      showBetResult(i, false, 0);
+      STATE.bets[i].active = false;
+    }
+  }
+
+  // Add to history
+  addHistory(STATE.crashAt);
+
+  // Show crash overlay
+  const co = document.getElementById('crash-overlay');
+  document.getElementById('crash-at').textContent = `@ ${STATE.crashAt.toFixed(2)}x`;
+  co.classList.add('show');
+
+  // Save ranking if epic
+  if (STATE.crashAt >= 10) {
+    // This crash was big — save it
+    saveRankEntry(STATE.crashAt, 'Round ' + STATE.round);
+  }
+
+  playSound('crash');
+  renderBetButtons('crashed');
+
+  // Draw final frame with plane falling
+  drawCrashFrame();
+
+  STATE.round++;
+  setTimeout(() => startWait(5), 3000);
+}
+
+function drawCrashFrame() {
+  // Draw the last curve + "X" at crash point
+  drawFrame();
+  if (curvePoints.length > 0) {
+    ctx.font = '28px serif';
+    ctx.fillText('💥', planeX - 12, planeY + 8);
+  }
+}
+
+// ── CASHOUT ──────────────────────────────────────────────────
+function doCashout(idx, isAuto) {
+  if (!STATE.bets[idx].active || STATE.bets[idx].cashedOut) return;
+  if (STATE.phase !== 'fly') return;
+
+  // Delay simulation (0.05x–0.15x)
+  const delay = isAuto ? 0 : Math.random() * 0.1 + 0.05;
+  const delayMs = isAuto ? 0 : delay * 200; // convert to ms roughly
+
+  setTimeout(() => {
+    if (STATE.phase !== 'fly') {
+      // Already crashed during delay — player missed!
+      showBetResult(idx, false, 0);
+      STATE.bets[idx] = { ...STATE.bets[idx], active:false, cashedOut:false };
+      showToast(`💀 Tarde demais! Crashed enquanto sacava!`, 'lose');
+      return;
+    }
+    const mult = STATE.mult;
+    const winAmount = Math.floor(STATE.bets[idx].amount * mult);
+    STATE.balance += winAmount;
+    saveBalance(); renderBalance();
+    STATE.bets[idx].cashedOut = true;
+    STATE.bets[idx].cashoutMult = mult;
+    showBetResult(idx, true, winAmount, mult);
+    setBetBtnState(idx, 'wait');
+    showToast(`✅ Sacou ${winAmount}🪙 @ ${mult.toFixed(2)}x!`, 'win');
+    playSound('cashout');
+  }, delayMs);
+}
+
+function showBetResult(idx, won, amount, mult) {
+  const el = document.getElementById(`bet-result-${idx}`);
+  if (won) {
+    el.textContent = `+${amount}🪙 (${mult.toFixed(2)}x)`;
+    el.className = 'bet-result won';
+  } else {
+    el.textContent = `−${STATE.bets[idx].amount}🪙`;
+    el.className = 'bet-result lost';
+  }
+  STATE.bets[idx] = { active:false, amount:0, cashedOut:false, cashoutMult:0, autoOn:STATE.bets[idx].autoOn };
+}
+
+// ── BET HANDLING ─────────────────────────────────────────────
+function handleBetBtn(idx) {
+  const b = STATE.bets[idx];
+
+  if (STATE.phase === 'wait') {
+    if (!b.active) {
+      // Place bet
+      const amt = Math.max(1, parseInt(document.getElementById(`bet-amount-${idx}`).value) || 0);
+      if (amt > STATE.balance) { showToast('Saldo insuficiente!', 'lose'); return; }
+      STATE.balance -= amt;
+      saveBalance(); renderBalance();
+      STATE.bets[idx] = { active:true, amount:amt, cashedOut:false, cashoutMult:0, autoOn:b.autoOn };
+      setBetBtnState(idx, 'cancel');
+      document.getElementById(`bet-result-${idx}`).textContent = `${amt}🪙 na fila`;
+      document.getElementById(`bet-result-${idx}`).className = 'bet-result';
+      updateBetSub(idx);
+    } else {
+      // Cancel bet (refund)
+      STATE.balance += b.amount;
+      saveBalance(); renderBalance();
+      STATE.bets[idx] = { active:false, amount:0, cashedOut:false, cashoutMult:0, autoOn:b.autoOn };
+      setBetBtnState(idx, 'bet');
+      document.getElementById(`bet-result-${idx}`).textContent = '—';
+      document.getElementById(`bet-result-${idx}`).className = 'bet-result';
+    }
+  } else if (STATE.phase === 'fly' && b.active && !b.cashedOut) {
+    doCashout(idx, false);
+    setBetBtnState(idx, 'wait');
+  }
+}
+
+function setBetBtnState(idx, state) {
+  const btn = document.getElementById(`bet-btn-${idx}`);
+  btn.className = 'bet-btn state-' + state;
+  const labels = { bet:'Apostar', cashout:'💰 Sacar!', wait:'Aguardando...', cancel:'Cancelar' };
+  const main = btn.childNodes[0];
+  if (main.nodeType === 3) main.textContent = labels[state] + '\n';
+  else btn.firstChild.textContent = labels[state];
+  // Update text content properly
+  btn.innerHTML = labels[state] + `<span class="btn-sub" id="bet-btn-sub-${idx}">${getBetSub(idx, state)}</span>`;
+  btn.onclick = () => handleBetBtn(idx);
+}
+
+function getBetSub(idx, state) {
+  if (state === 'cashout') {
+    const est = Math.floor((STATE.bets[idx].amount || 0) * STATE.mult);
+    return `≈${est}🪙 @ ${STATE.mult.toFixed(2)}x`;
+  }
+  const amt = document.getElementById(`bet-amount-${idx}`)?.value || '0';
+  return `${amt} 🪙`;
+}
+
+function updateBetSub(idx) {
+  const sub = document.getElementById(`bet-btn-sub-${idx}`);
+  if (sub) sub.textContent = getBetSub(idx, STATE.bets[idx].active ? 'cashout' : 'bet');
+}
+
+function renderBetButtons(phase) {
+  for (let i = 0; i < 2; i++) {
+    const b = STATE.bets[i];
+    if (phase === 'crashed' && !b.cashedOut) {
+      setBetBtnState(i, 'bet');
+    }
+  }
+}
+
+function adjBet(idx, factor) {
+  const inp = document.getElementById(`bet-amount-${idx}`);
+  inp.value = Math.max(1, Math.round(parseInt(inp.value) * factor));
+}
+function setBet(idx, val) {
+  document.getElementById(`bet-amount-${idx}`).value = val;
+}
+function toggleAuto(idx) {
+  const t = document.getElementById(`toggle-auto-${idx}`);
+  t.classList.toggle('on');
+  STATE.bets[idx].autoOn = t.classList.contains('on');
+}
+
+// ── AUTO BET ─────────────────────────────────────────────────
+function toggleAutoBet() {
+  STATE.autoBet = !STATE.autoBet;
+  const btn = document.getElementById('auto-bet-btn');
+  if (STATE.autoBet) {
+    STATE.autoBetRoundsLeft = parseInt(document.getElementById('auto-rounds').value) || 10;
+    btn.textContent = '⏹ Parar auto-aposta';
+    btn.className = 'abp-btn active';
+    showToast(`🤖 Auto-aposta ativada por ${STATE.autoBetRoundsLeft} rodadas`, 'win');
+  } else {
+    STATE.autoBetRoundsLeft = 0;
+    btn.textContent = '▶ Iniciar auto-aposta';
+    btn.className = 'abp-btn inactive';
+  }
+}
+
+// ── RANKING ──────────────────────────────────────────────────
+async function saveRankEntry(mult, label) {
+  const data = { mult: parseFloat(mult.toFixed(2)), label, ts: Date.now() };
+  // Try Firebase
+  if (window._fbAdd) {
+    try { await window._fbAdd(data); } catch(e) {}
+  }
+  // Also local
+  const local = JSON.parse(localStorage.getItem('av_rank') || '[]');
+  local.push(data);
+  local.sort((a,b) => b.mult - a.mult);
+  localStorage.setItem('av_rank', JSON.stringify(local.slice(0,10)));
+}
+
+async function loadRanking() {
+  let data = [];
+  if (window._fbGet) {
+    data = await window._fbGet();
+  }
+  if (!data || data.length === 0) {
+    data = JSON.parse(localStorage.getItem('av_rank') || '[]');
+  }
+  // If still empty, show placeholder
+  if (!data || data.length === 0) {
+    data = [
+      { mult: 7000, label: 'Lendário 🔥' },
+      { mult: 247.5, label: 'Impossível' },
+      { mult: 89.3, label: 'Absurdo' },
+    ];
+  }
+
+  const medals = ['🥇','🥈','🥉'];
+  const rankList = document.getElementById('rank-list');
+  rankList.innerHTML = data.map((e, i) => {
+    const cls = e.mult >= 100 ? 'var(--col-epic)' : e.mult >= 10 ? 'var(--col-high)' : e.mult >= 2 ? 'var(--col-med)' : 'var(--col-low)';
+    return `<li>
+      <span class="rk-pos">${medals[i] || (i+1)}</span>
+      <span class="rk-name">${e.label || 'Rodada'}</span>
+      <span class="rk-val" style="color:${cls}">${e.mult.toFixed(2)}x</span>
+    </li>`;
+  }).join('');
+}
+
+// ── SOUNDS (Web Audio API) ───────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playSound(type) {
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    if (type === 'rise') {
+      osc.frequency.setValueAtTime(220, ac.currentTime);
+      osc.frequency.linearRampToValueAtTime(440, ac.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.06, ac.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3);
+      osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.3);
+    } else if (type === 'cashout') {
+      osc.frequency.setValueAtTime(660, ac.currentTime);
+      osc.frequency.linearRampToValueAtTime(880, ac.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.08, ac.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.25);
+      osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.25);
+    } else if (type === 'crash') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, ac.currentTime);
+      osc.frequency.linearRampToValueAtTime(80, ac.currentTime + 0.5);
+      gain.gain.setValueAtTime(0.1, ac.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.5);
+      osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.5);
+    }
+  } catch(e) {} // audio may not be available
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = `toast ${type || ''}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+// ── UPDATE CASHOUT SUBS DURING FLIGHT ───────────────────────
+function updateCashoutSubs() {
+  if (STATE.phase !== 'fly') return;
+  for (let i = 0; i < 2; i++) {
+    if (STATE.bets[i].active && !STATE.bets[i].cashedOut) {
+      const sub = document.getElementById(`bet-btn-sub-${i}`);
+      if (sub) {
+        const est = Math.floor(STATE.bets[i].amount * STATE.mult);
+        sub.textContent = `≈${est}🪙 @ ${STATE.mult.toFixed(2)}x`;
+      }
+    }
+  }
+  requestAnimationFrame(updateCashoutSubs);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+initBalance();
+initHistory();
+loadRanking();
+setTimeout(() => loadRanking(), 2000); // retry after Firebase loads
+updateCashoutSubs();
+startWait(5);
+
+// Initial bet button states
+setBetBtnState(0, 'bet');
+setBetBtnState(1, 'bet');
+</script>
+</body>
+</html>
