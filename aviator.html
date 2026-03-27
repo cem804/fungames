@@ -695,26 +695,40 @@ function updateHistoryPanel(){
 let pendingScore = null;
 
 function checkRanking(winAmount, mult, betAmount){
-  const rankRef = window._fbRef(window._fbDb, 'aviator_ranking');
-  window._fbGet(window._fbQuery(rankRef, window._fbOrderByChild('amount'), window._fbLimitToLast(10))).then(snap => {
-    const entries = [];
-    snap.forEach(child => entries.push({...child.val(), key: child.key}));
-    const minAmount = entries.length < 10 ? 0 : Math.min(...entries.map(e=>e.amount));
-    if(winAmount > minAmount){
-      pendingScore = {amount: winAmount, mult: parseFloat(mult.toFixed(2)), bet: betAmount};
-      document.getElementById('nameInput').value = '';
-      document.getElementById('nameModal').classList.add('show');
-    }
-  }).catch(()=>{
+  // Só considera recorde se ganhou ao menos 2x a aposta
+  if(winAmount < betAmount * 2) return;
+
+  function showModal(){
+    pendingScore = {amount: winAmount, mult: parseFloat(mult.toFixed(2)), bet: betAmount};
+    document.getElementById('nameInput').value = '';
+    document.getElementById('nameModal').classList.add('show');
+  }
+
+  if(!window._fbReady || !window._fbDb){
     // Fallback local
     const local = JSON.parse(localStorage.getItem('av_local_rank') || '[]');
-    const min = local.length < 10 ? 0 : Math.min(...local.map(e=>e.amount));
-    if(winAmount > min){
-      pendingScore = {amount: winAmount, mult: parseFloat(mult.toFixed(2)), bet: betAmount};
-      document.getElementById('nameInput').value = '';
-      document.getElementById('nameModal').classList.add('show');
-    }
-  });
+    const sorted = local.slice().sort((a,b)=>b.amount-a.amount);
+    const minAmount = sorted.length >= 10 ? sorted[9].amount : 0;
+    if(winAmount > minAmount) showModal();
+    return;
+  }
+
+  const rankRef = window._fbRef(window._fbDb, 'aviator_ranking');
+  window._fbGet(window._fbQuery(rankRef, window._fbOrderByChild('amount'), window._fbLimitToLast(10)))
+    .then(snap => {
+      const entries = [];
+      snap.forEach(child => entries.push(child.val()));
+      entries.sort((a,b) => b.amount - a.amount);
+      // Só entra no top10 se superar o pior do ranking cheio, ou se ranking tiver < 10
+      const minAmount = entries.length >= 10 ? entries[9].amount : 0;
+      if(winAmount > minAmount) showModal();
+    })
+    .catch(()=>{
+      const local = JSON.parse(localStorage.getItem('av_local_rank') || '[]');
+      const sorted = local.slice().sort((a,b)=>b.amount-a.amount);
+      const minAmount = sorted.length >= 10 ? sorted[9].amount : 0;
+      if(winAmount > minAmount) showModal();
+    });
 }
 
 function submitScore(){
@@ -724,23 +738,32 @@ function submitScore(){
   document.getElementById('nameModal').classList.remove('show');
 
   const entry = {name, amount: pendingScore.amount, mult: pendingScore.mult, bet: pendingScore.bet, ts: Date.now()};
+  pendingScore = null;
 
-  if(window._fbReady){
+  const fbOk = window._fbReady && window._fbDb && window._fbRef && window._fbPush && window._fbGet && window._fbSet && window._fbQuery && window._fbOrderByChild;
+
+  if(fbOk){
     const rankRef = window._fbRef(window._fbDb, 'aviator_ranking');
-    window._fbPush(rankRef, entry).then(()=>{
-      showToast('🏆 Salvo no ranking!', 'win');
-      loadRanking();
-      // Trim to top 10
-      trimRanking();
-    });
+    window._fbPush(rankRef, entry)
+      .then(() => {
+        showToast('🏆 Salvo no ranking!', 'win');
+        trimRanking();
+        // Recarrega ranking se painel estiver aberto
+        if(document.getElementById('rankingPanel').classList.contains('open')){
+          setTimeout(loadRanking, 500);
+        }
+      })
+      .catch(err => {
+        console.warn('Erro ao salvar ranking:', err);
+        showToast('Erro ao salvar 😕', 'loss');
+      });
   } else {
     const local = JSON.parse(localStorage.getItem('av_local_rank') || '[]');
     local.push(entry);
-    local.sort((a,b)=>b.amount-a.amount);
+    local.sort((a,b) => b.amount - a.amount);
     localStorage.setItem('av_local_rank', JSON.stringify(local.slice(0,10)));
     showToast('🏆 Salvo localmente!', 'win');
   }
-  pendingScore = null;
 }
 
 function trimRanking(){
@@ -761,14 +784,24 @@ function trimRanking(){
 
 function loadRanking(){
   const body = document.getElementById('rankingBody');
-  if(window._fbReady){
+  if(!body) return;
+
+  const fbOk = window._fbReady && window._fbDb && window._fbRef && window._fbGet && window._fbQuery && window._fbOrderByChild && window._fbLimitToLast;
+
+  if(fbOk){
+    body.innerHTML = '<div class="empty-rank">Carregando...</div>';
     const rankRef = window._fbRef(window._fbDb, 'aviator_ranking');
-    window._fbGet(window._fbQuery(rankRef, window._fbOrderByChild('amount'), window._fbLimitToLast(10))).then(snap=>{
-      const entries = [];
-      snap.forEach(c=>entries.push(c.val()));
-      entries.sort((a,b)=>b.amount-a.amount);
-      renderRanking(entries);
-    }).catch(()=>renderRankingLocal());
+    window._fbGet(window._fbQuery(rankRef, window._fbOrderByChild('amount'), window._fbLimitToLast(10)))
+      .then(snap => {
+        const entries = [];
+        snap.forEach(c => entries.push(c.val()));
+        entries.sort((a,b) => b.amount - a.amount);
+        renderRanking(entries);
+      })
+      .catch(err => {
+        console.warn('Firebase ranking error:', err);
+        renderRankingLocal();
+      });
   } else {
     renderRankingLocal();
   }
