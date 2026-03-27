@@ -1451,7 +1451,7 @@ const GAMES = [
     provider: 'PGSoft',
     emoji: '🐯',
     badge: 'Popular',
-    gameId: 'fortune-tiger'
+    gameId: '18227'
   },
   {
     id: 'aviator',
@@ -1459,15 +1459,15 @@ const GAMES = [
     provider: 'Spribe',
     emoji: '✈️',
     badge: 'Hot',
-    gameId: 'aviator'
+    gameId: '15373'
   },
   {
     id: 'treasure-bowl',
-    name: 'Treasure Bowl',
+    name: 'Treasure Pot',
     provider: 'JDB',
     emoji: '🏺',
     badge: null,
-    gameId: 'treasure-bowl'
+    gameId: '17755'
   }
 ];
 
@@ -1490,25 +1490,13 @@ window.openGame = async function(gameId) {
   const game = GAMES.find(g => g.id === gameId);
   if (!game) return;
 
-  // Monta URL SlotsLaunch com saldo e moeda
-  const saldoCentavos = Math.floor(window._state.saldo * 100);
-  const baseUrl = 'https://api.slotslaunch.com/game';
-  const params = new URLSearchParams({
-    key: API_KEY,
-    game: game.gameId,
-    currency: 'BRL',
-    balance: saldoCentavos,
-    player: window._state.uid,
-    lang: 'pt',
-    home: 'https://veribed.vercel.app/'
-  });
-
-  const url = `${baseUrl}?${params.toString()}`;
+  // O seu API_KEY é o token que você usou nos links de teste.
+  const url = `https://slotslaunch.com/iframe/${game.gameId}?token=${API_KEY}`;
+  
   document.getElementById('game-iframe').src = url;
   updateSaldoUI();
   showScreen('screen-game');
 }
-
 window.closeGame = async function() {
   // Ao sair do jogo, re-fetch saldo do Firestore (sincroniza)
   document.getElementById('game-iframe').src = '';
