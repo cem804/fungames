@@ -4,1512 +4,178 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>VériBed</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a25;
-    --border: rgba(255,255,255,0.06);
-    --accent: #c8a96e;
-    --accent2: #e8c98e;
-    --accent-glow: rgba(200,169,110,0.15);
-    --text: #f0ede8;
-    --muted: rgba(240,237,232,0.45);
-    --danger: #e05555;
-    --success: #4ecb7f;
-    --radius: 14px;
-    --radius-sm: 8px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    overflow: hidden;
-  }
-
-  /* ─── APP SHELL ─── */
-  #app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-
-  /* ─── SCREENS ─── */
-  .screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-  .screen.active { display: flex; }
-
-  /* ─── AUTH ─── */
-  #screen-auth {
-    background: var(--bg);
-    justify-content: center;
-    align-items: center;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .auth-bg {
-    position: absolute; inset: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(200,169,110,0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 30% at 80% 80%, rgba(200,169,110,0.06) 0%, transparent 60%);
-  }
-
-  .auth-grid {
-    position: absolute; inset: 0; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-
-  .auth-card {
-    position: relative; z-index: 1;
-    width: 100%; max-width: 400px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 36px 32px;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,169,110,0.08);
-  }
-
-  .logo {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-
-  .logo-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-
-  .logo-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    box-shadow: 0 4px 20px rgba(200,169,110,0.3);
-  }
-
-  .logo-text {
-    font-family: 'Syne', sans-serif;
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--text);
-  }
-
-  .logo-text span { color: var(--accent); }
-
-  .logo-sub {
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
-
-  .auth-tabs {
-    display: flex;
-    background: var(--bg);
-    border-radius: var(--radius-sm);
-    padding: 3px;
-    margin-bottom: 28px;
-  }
-
-  .auth-tab {
-    flex: 1; padding: 8px;
-    text-align: center;
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: 6px;
-    color: var(--muted);
-    transition: all 0.2s;
-    border: none; background: none;
-    letter-spacing: 0.3px;
-  }
-
-  .auth-tab.active {
-    background: var(--surface2);
-    color: var(--text);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  }
-
-  .field { margin-bottom: 14px; }
-
-  .field label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--muted);
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .field input {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .field input:focus { border-color: rgba(200,169,110,0.5); }
-  .field input::placeholder { color: rgba(240,237,232,0.2); }
-
-  .btn-primary {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #0a0a0f;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.3px;
-    transition: opacity 0.2s, transform 0.1s;
-    margin-top: 6px;
-    box-shadow: 0 4px 20px rgba(200,169,110,0.25);
-  }
-
-  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
-
-  .auth-error {
-    background: rgba(224,85,85,0.1);
-    border: 1px solid rgba(224,85,85,0.3);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--danger);
-    margin-bottom: 14px;
-    display: none;
-  }
-
-  .auth-bonus-hint {
-    text-align: center;
-    margin-top: 18px;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .auth-bonus-hint strong { color: var(--accent); }
-
-  /* ─── MAIN LAYOUT ─── */
-  #screen-main {
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* TOPBAR */
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    gap: 12px;
-  }
-
-  .topbar-logo {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 18px;
-    letter-spacing: -0.3px;
-  }
-
-  .topbar-logo span { color: var(--accent); }
-
-  .saldo-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 6px 12px 6px 8px;
-    cursor: default;
-  }
-
-  .saldo-icon {
-    width: 26px; height: 26px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
-  }
-
-  .saldo-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--accent2);
-  }
-
-  .topbar-actions { display: flex; gap: 8px; }
-
-  .icon-btn {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    transition: background 0.2s;
-    color: var(--text);
-  }
-
-  .icon-btn:active { background: var(--accent-glow); }
-
-  /* CONTENT AREA */
-  .content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 0 80px;
-    overscroll-behavior: contain;
-  }
-
-  .content::-webkit-scrollbar { width: 0; }
-
-  /* HERO BANNER */
-  .hero {
-    margin: 16px 16px 0;
-    background: linear-gradient(135deg, #1a1610 0%, #1e1a10 50%, #151520 100%);
-    border: 1px solid rgba(200,169,110,0.15);
-    border-radius: 18px;
-    padding: 28px 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero::before {
-    content: '♠';
-    position: absolute;
-    right: -10px; top: -20px;
-    font-size: 120px;
-    opacity: 0.04;
-    color: var(--accent);
-    pointer-events: none;
-  }
-
-  .hero-tag {
-    display: inline-block;
-    background: rgba(200,169,110,0.15);
-    border: 1px solid rgba(200,169,110,0.3);
-    border-radius: 100px;
-    padding: 3px 10px;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--accent);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  .hero h2 {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 8px;
-    letter-spacing: -0.3px;
-  }
-
-  .hero p {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.5;
-    margin-bottom: 18px;
-  }
-
-  .hero-btns { display: flex; gap: 10px; }
-
-  .btn-gold {
-    padding: 11px 20px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #0a0a0f;
-    border: none; border-radius: var(--radius-sm);
-    font-family: 'Syne', sans-serif;
-    font-size: 13px; font-weight: 700;
-    cursor: pointer; letter-spacing: 0.3px;
-    transition: opacity 0.2s, transform 0.1s;
-    box-shadow: 0 4px 16px rgba(200,169,110,0.2);
-  }
-
-  .btn-gold:active { transform: scale(0.97); }
-
-  .btn-ghost {
-    padding: 11px 20px;
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-family: 'Syne', sans-serif;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; letter-spacing: 0.3px;
-    transition: all 0.2s;
-  }
-
-  .btn-ghost:active { background: var(--surface2); }
-
-  /* SECTIONS */
-  .section { padding: 22px 16px 0; }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  .section-title .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
-
-  /* GAMES GRID */
-  .games-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-
-  .game-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-    position: relative;
-  }
-
-  .game-card:active { transform: scale(0.96); }
-
-  .game-card:hover {
-    border-color: rgba(200,169,110,0.25);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  }
-
-  .game-thumb {
-    width: 100%; aspect-ratio: 3/4;
-    object-fit: cover;
-    display: block;
-    background: var(--surface2);
-  }
-
-  .game-thumb-placeholder {
-    width: 100%; aspect-ratio: 3/4;
-    background: linear-gradient(135deg, var(--surface2), var(--bg));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 36px;
-  }
-
-  .game-info {
-    padding: 8px 10px;
-  }
-
-  .game-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
-  }
-
-  .game-provider {
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  .game-badge {
-    position: absolute; top: 8px; left: 8px;
-    background: rgba(200,169,110,0.9);
-    color: #0a0a0f;
-    font-size: 9px; font-weight: 700;
-    padding: 2px 6px; border-radius: 4px;
-    letter-spacing: 0.5px; text-transform: uppercase;
-  }
-
-  /* BOTTOM NAV */
-  .bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex;
-    padding: 10px 0 max(10px, env(safe-area-inset-bottom));
-    z-index: 100;
-  }
-
-  .nav-item {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; gap: 3px;
-    cursor: pointer;
-    padding: 4px 0;
-    color: var(--muted);
-    transition: color 0.2s;
-    border: none; background: none;
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  .nav-item.active { color: var(--accent); }
-
-  .nav-icon { font-size: 20px; line-height: 1; }
-  .nav-label { font-size: 10px; font-weight: 500; letter-spacing: 0.3px; }
-
-  /* ─── MODAL/SHEETS ─── */
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 200;
-    display: none;
-    align-items: flex-end;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .overlay.open { display: flex; }
-
-  .sheet {
-    width: 100%; max-width: 500px;
-    background: var(--surface);
-    border-radius: 24px 24px 0 0;
-    padding: 0 0 max(24px, env(safe-area-inset-bottom));
-    max-height: 90dvh;
-    overflow-y: auto;
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-
-  .sheet-handle {
-    width: 40px; height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 14px auto 0;
-  }
-
-  .sheet-header {
-    padding: 20px 20px 0;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-
-  .sheet-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px; font-weight: 800;
-    letter-spacing: -0.3px;
-  }
-
-  .sheet-close {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: var(--surface2);
-    border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--muted); font-size: 16px;
-    transition: background 0.2s;
-  }
-
-  .sheet-close:active { background: var(--border); }
-
-  .sheet-body { padding: 20px; }
-
-  /* DEPÓSITO */
-  .valores-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .valor-btn {
-    padding: 12px 8px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 14px; font-weight: 600;
-    cursor: pointer; text-align: center;
-    transition: all 0.2s;
-  }
-
-  .valor-btn.selected {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-    color: var(--accent2);
-  }
-
-  .input-custom {
-    display: flex;
-    align-items: center;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 0 14px;
-    margin-bottom: 16px;
-    gap: 8px;
-  }
-
-  .input-custom span {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    color: var(--muted);
-  }
-
-  .input-custom input {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 13px 0;
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 16px; font-weight: 600;
-    outline: none;
-  }
-
-  .input-custom:focus-within {
-    border-color: rgba(200,169,110,0.5);
-  }
-
-  /* PIX PENDING */
-  .pix-pending {
-    text-align: center;
-    padding: 20px 0;
-    display: none;
-  }
-
-  .pix-circle {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    background: rgba(200,169,110,0.1);
-    border: 2px solid var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 16px;
-    font-size: 36px;
-    position: relative;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(200,169,110,0.3); }
-    50% { box-shadow: 0 0 0 12px rgba(200,169,110,0); }
-  }
-
-  .pix-pending h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px; font-weight: 800;
-    margin-bottom: 6px;
-  }
-
-  .pix-pending p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
-
-  .pix-timer {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px; font-weight: 800;
-    color: var(--accent);
-    margin: 8px 0;
-  }
-
-  /* SAQUE */
-  .saldo-disp {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 14px;
-    text-align: center;
-    margin-bottom: 16px;
-  }
-
-  .saldo-disp .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-  .saldo-disp .value { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--accent2); }
-
-  .saque-success {
-    text-align: center; padding: 20px 0; display: none;
-  }
-
-  .saque-success .icon { font-size: 48px; margin-bottom: 12px; }
-
-  .saque-success h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px; font-weight: 800; margin-bottom: 6px;
-  }
-
-  .saque-success p { font-size: 13px; color: var(--muted); line-height: 1.5; }
-
-  /* ─── GAME SCREEN ─── */
-  #screen-game {
-    background: #000;
-    position: relative;
-  }
-
-  #screen-game iframe {
-    width: 100%; flex: 1; border: none;
-    display: block;
-  }
-
-  .game-topbar {
-    height: 48px;
-    background: rgba(0,0,0,0.95);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    flex-shrink: 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    z-index: 10;
-  }
-
-  .back-btn {
-    display: flex; align-items: center; gap: 6px;
-    color: var(--muted);
-    font-size: 13px; font-weight: 500;
-    cursor: pointer;
-    border: none; background: none;
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    transition: color 0.2s;
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  .back-btn:active { color: var(--text); }
-
-  .game-saldo-bar {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px; font-weight: 700;
-    color: var(--accent2);
-  }
-
-  /* ─── PROFILE SCREEN ─── */
-  #screen-profile {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 80px;
-  }
-
-  #screen-profile::-webkit-scrollbar { width: 0; }
-
-  .profile-hero {
-    background: linear-gradient(135deg, var(--surface), var(--surface2));
-    border-bottom: 1px solid var(--border);
-    padding: 28px 20px 24px;
-    text-align: center;
-  }
-
-  .avatar {
-    width: 68px; height: 68px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Syne', sans-serif;
-    font-size: 26px; font-weight: 800;
-    color: #0a0a0f;
-    margin: 0 auto 12px;
-    box-shadow: 0 4px 20px rgba(200,169,110,0.3);
-  }
-
-  .profile-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px; font-weight: 800; margin-bottom: 4px;
-  }
-
-  .profile-badge {
-    display: inline-block;
-    background: rgba(200,169,110,0.15);
-    border: 1px solid rgba(200,169,110,0.3);
-    border-radius: 100px;
-    padding: 2px 10px;
-    font-size: 11px; color: var(--accent);
-    letter-spacing: 1px; text-transform: uppercase;
-  }
-
-  .stats-row {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 16px;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-  }
-
-  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-  .stat-value { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--accent2); }
-
-  .menu-section { padding: 0 16px 16px; }
-
-  .menu-item {
-    display: flex; align-items: center;
-    padding: 15px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 8px;
-    cursor: pointer;
-    gap: 14px;
-    transition: background 0.2s;
-  }
-
-  .menu-item:active { background: var(--surface2); }
-
-  .menu-item .mi-icon {
-    width: 36px; height: 36px;
-    border-radius: var(--radius-sm);
-    background: var(--surface2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-  }
-
-  .menu-item .mi-text { flex: 1; }
-  .menu-item .mi-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; }
-  .menu-item .mi-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
-  .menu-item .mi-arrow { color: var(--muted); font-size: 14px; }
-
-  .btn-danger {
-    width: 100%;
-    padding: 14px;
-    background: rgba(224,85,85,0.1);
-    border: 1px solid rgba(224,85,85,0.25);
-    color: var(--danger);
-    border-radius: var(--radius-sm);
-    font-family: 'Syne', sans-serif;
-    font-size: 15px; font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin: 0 16px;
-    width: calc(100% - 32px);
-  }
-
-  .btn-danger:active { background: rgba(224,85,85,0.2); }
-
-  /* TOAST */
-  .toast {
-    position: fixed;
-    bottom: 90px; left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 10px 20px;
-    font-size: 13px; font-weight: 500;
-    white-space: nowrap;
-    opacity: 0;
-    transition: all 0.3s;
-    z-index: 300;
-    pointer-events: none;
-  }
-
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .toast.success { border-color: rgba(78,203,127,0.4); color: var(--success); }
-  .toast.error { border-color: rgba(224,85,85,0.4); color: var(--danger); }
-
-  /* LOADING */
-  .spinner {
-    width: 20px; height: 20px;
-    border: 2px solid rgba(255,255,255,0.1);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: inline-block;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* DIVIDER */
-  .divider {
-    height: 1px; background: var(--border);
-    margin: 16px 0;
-  }
-
-  /* EMPTY STATE */
-  .empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--muted);
-  }
-
-  .empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty p { font-size: 14px; line-height: 1.5; }
-
-  /* Responsive */
-  @media (min-width: 400px) {
-    .games-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  .highlight { color: var(--accent2); }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#09090f;--panel:#111118;--card:#141420;--border:#1e1e2e;
+  --red:#e03131;--green:#2ecc71;--blue:#4dabf7;--gold:#ffd43b;--purple:#c77dff;
+  --text:#e8e8f0;--muted:#5a5a70;--syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--dm);overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+.header{position:sticky;top:0;z-index:50;background:rgba(9,9,15,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--syne);font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.logo em{font-style:normal;color:var(--gold)}
+.header-tag{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-family:var(--syne)}
+
+.hero{padding:32px 20px 20px;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,212,59,.08);border:1px solid rgba(255,212,59,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--gold);letter-spacing:1.5px;font-family:var(--syne);font-weight:600;text-transform:uppercase;margin-bottom:14px}
+.live-dot{width:7px;height:7px;background:var(--red);border-radius:50%;animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hero h1{font-family:var(--syne);font-size:30px;font-weight:800;line-height:1.15;margin-bottom:10px;letter-spacing:-1px}
+.hero h1 span{color:var(--gold)}
+.hero p{font-size:14px;color:var(--muted);line-height:1.6;max-width:340px}
+
+.section{padding:20px 20px 0;position:relative;z-index:1}
+.section-label{font-family:var(--syne);font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.games-grid{display:flex;flex-direction:column;gap:12px;padding:0 20px 24px;position:relative;z-index:1}
+
+.game-card{border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--card);position:relative;transition:transform .2s;-webkit-user-select:none;user-select:none}
+.game-card.featured{border-color:rgba(224,49,49,.3)}
+.game-card.featured::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(224,49,49,.06),transparent 60%);pointer-events:none;z-index:0}
+.game-card.bicho-card{border-color:rgba(255,230,109,.2);cursor:pointer}
+.game-card.bicho-card:active{transform:scale(.97)}
+.game-card.bicho-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,230,109,.05),transparent 60%);pointer-events:none;z-index:0}
+
+.card-top{padding:20px 20px 0;position:relative;z-index:1}
+.card-badges{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.badge{font-family:var(--syne);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:20px}
+.badge-live{background:rgba(224,49,49,.15);color:var(--red);border:1px solid rgba(224,49,49,.3)}
+.badge-popular{background:rgba(255,212,59,.1);color:var(--gold);border:1px solid rgba(255,212,59,.3)}
+.badge-bicho{background:rgba(255,230,109,.1);color:#ffe66d;border:1px solid rgba(255,230,109,.25)}
+.card-title{font-family:var(--syne);font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:6px}
+.card-desc{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+
+.card-visual{height:100px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 -1px}
+.card-visual-cassino{background:linear-gradient(160deg,#0a0a12 0%,#100a15 100%)}
+.card-visual-bicho{background:linear-gradient(160deg,#0a0a12 0%,#0d0c08 100%)}
+.plane-anim{position:absolute;font-size:26px;animation:fly-plane 3s ease-in-out infinite}
+@keyframes fly-plane{0%{transform:translate(-20px,20px)}50%{transform:translate(20px,-20px)}100%{transform:translate(-20px,20px)}}
+.curve-svg{position:absolute;bottom:0;left:0;width:100%;opacity:.4}
+.mult-badge{position:absolute;top:12px;right:16px;font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--blue);text-shadow:0 0 20px rgba(77,171,247,.5)}
+.bicho-icons{display:flex;gap:10px;font-size:24px;opacity:.5;flex-wrap:wrap;justify-content:center}
+
+.sub-games{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;position:relative;z-index:1}
+.sub-game{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:10px;-webkit-tap-highlight-color:transparent}
+.sub-game:active{transform:scale(.95)}
+.sub-game.active-game{border-color:rgba(224,49,49,.4);background:rgba(224,49,49,.06)}
+.sub-game.coming{opacity:.45;cursor:default;pointer-events:none}
+.sub-game-emoji{font-size:22px}
+.sub-game-name{font-family:var(--syne);font-size:13px;font-weight:700;line-height:1.2}
+.sub-game.active-game .sub-game-name{color:var(--red)}
+.sub-game-tag{font-size:10px;color:var(--muted);margin-top:1px}
+
+.card-bottom{padding:14px 20px 18px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);position:relative;z-index:1}
+.card-action{font-family:var(--syne);font-size:13px;font-weight:700;color:#fff;letter-spacing:.5px}
+.card-arrow{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted)}
+
+.footer{padding:24px 20px 32px;text-align:center;position:relative;z-index:1}
+.footer p{font-size:11px;color:var(--muted);line-height:1.8}
+.footer strong{color:var(--text)}
+
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(80px);opacity:.08}
+.orb1{width:300px;height:300px;background:var(--red);top:-100px;right:-100px}
+.orb2{width:250px;height:250px;background:var(--purple);bottom:100px;left:-120px}
 </style>
 </head>
 <body>
-<div id="app">
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
 
-  <!-- ═══ AUTH ═══ -->
-  <div id="screen-auth" class="screen active">
-    <div class="auth-bg"></div>
-    <div class="auth-grid"></div>
-    <div class="auth-card">
-      <div class="logo">
-        <div class="logo-mark">
-          <div class="logo-icon">♠</div>
-          <div class="logo-text">Véri<span>Bed</span></div>
-        </div>
-        <div class="logo-sub">Cassino</div>
-      </div>
-
-      <div class="auth-tabs">
-        <button class="auth-tab active" onclick="switchTab('login')">Entrar</button>
-        <button class="auth-tab" onclick="switchTab('cadastro')">Cadastrar</button>
-      </div>
-
-      <div id="auth-error" class="auth-error"></div>
-
-      <div id="form-login">
-        <div class="field">
-          <label>Usuário</label>
-          <input type="text" id="login-user" placeholder="seu usuário" autocomplete="username">
-        </div>
-        <div class="field">
-          <label>Senha</label>
-          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
-        </div>
-        <button class="btn-primary" onclick="doLogin()">Entrar</button>
-      </div>
-
-      <div id="form-cadastro" style="display:none">
-        <div class="field">
-          <label>Usuário</label>
-          <input type="text" id="cad-user" placeholder="escolha um usuário" autocomplete="username">
-        </div>
-        <div class="field">
-          <label>Senha</label>
-          <input type="password" id="cad-pass" placeholder="mínimo 6 caracteres" autocomplete="new-password">
-        </div>
-        <div class="field">
-          <label>Confirmar senha</label>
-          <input type="password" id="cad-pass2" placeholder="repita a senha">
-        </div>
-        <button class="btn-primary" onclick="doCadastro()">Criar conta</button>
-        <div class="auth-bonus-hint">🎁 Ganhe <strong>R$100</strong> de bônus ao criar sua conta</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══ MAIN ═══ -->
-  <div id="screen-main" class="screen">
-    <div class="topbar">
-      <div class="topbar-logo">Véri<span>Bed</span></div>
-      <div class="saldo-pill">
-        <div class="saldo-icon">💰</div>
-        <div class="saldo-value" id="saldo-display">R$0,00</div>
-      </div>
-      <div class="topbar-actions">
-        <button class="icon-btn" onclick="openDeposito()" title="Depositar">＋</button>
-      </div>
-    </div>
-
-    <div class="content">
-      <!-- Hero -->
-      <div class="hero">
-        <div class="hero-tag">✦ Bem-vindo</div>
-        <h2>Sorte grande<br>começa aqui</h2>
-        <p>Seus jogos favoritos, um só lugar. Saldo real, adrenalina de verdade.</p>
-        <div class="hero-btns">
-          <button class="btn-gold" onclick="openDeposito()">Depositar</button>
-          <button class="btn-ghost" onclick="openSaque()">Sacar</button>
-        </div>
-      </div>
-
-      <!-- Jogos em Destaque -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title"><div class="dot"></div>Jogos</div>
-        </div>
-        <div class="games-grid" id="games-grid">
-          <!-- gerado via JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" onclick="showTab('home')">
-        <div class="nav-icon">🏠</div>
-        <div class="nav-label">Início</div>
-      </button>
-      <button class="nav-item" onclick="openDeposito()">
-        <div class="nav-icon">💳</div>
-        <div class="nav-label">Depositar</div>
-      </button>
-      <button class="nav-item" onclick="openSaque()">
-        <div class="nav-icon">💸</div>
-        <div class="nav-label">Sacar</div>
-      </button>
-      <button class="nav-item" onclick="showTab('perfil')">
-        <div class="nav-icon">👤</div>
-        <div class="nav-label">Perfil</div>
-      </button>
-    </nav>
-  </div>
-
-  <!-- ═══ GAME ═══ -->
-  <div id="screen-game" class="screen">
-    <div class="game-topbar">
-      <button class="back-btn" onclick="closeGame()">← Cassino</button>
-      <div class="game-saldo-bar" id="game-saldo-bar">R$0,00</div>
-    </div>
-    <iframe id="game-iframe" src="" allowfullscreen allow="autoplay; fullscreen"></iframe>
-  </div>
-
-  <!-- ═══ PERFIL ═══ -->
-  <div id="screen-profile" class="screen">
-    <div class="topbar">
-      <div class="topbar-logo">Véri<span>Bed</span></div>
-      <div class="saldo-pill">
-        <div class="saldo-icon">💰</div>
-        <div class="saldo-value" id="saldo-display-2">R$0,00</div>
-      </div>
-    </div>
-
-    <div class="profile-hero">
-      <div class="avatar" id="profile-avatar">?</div>
-      <div class="profile-name" id="profile-name">—</div>
-      <div class="profile-badge">Membro VériBed</div>
-    </div>
-
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Saldo</div>
-        <div class="stat-value" id="stat-saldo">R$0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Jogos</div>
-        <div class="stat-value">3</div>
-      </div>
-    </div>
-
-    <div class="menu-section">
-      <div class="menu-item" onclick="openDeposito()">
-        <div class="mi-icon">💳</div>
-        <div class="mi-text">
-          <div class="mi-title">Depositar</div>
-          <div class="mi-sub">PIX instantâneo</div>
-        </div>
-        <div class="mi-arrow">›</div>
-      </div>
-      <div class="menu-item" onclick="openSaque()">
-        <div class="mi-icon">💸</div>
-        <div class="mi-text">
-          <div class="mi-title">Sacar</div>
-          <div class="mi-sub">Transferência bancária</div>
-        </div>
-        <div class="mi-arrow">›</div>
-      </div>
-    </div>
-
-    <button class="btn-danger" onclick="doLogout()">Sair da conta</button>
-
-    <!-- bottom spacer -->
-    <div style="height: 80px"></div>
-
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="showTab('home')">
-        <div class="nav-icon">🏠</div>
-        <div class="nav-label">Início</div>
-      </button>
-      <button class="nav-item" onclick="openDeposito()">
-        <div class="nav-icon">💳</div>
-        <div class="nav-label">Depositar</div>
-      </button>
-      <button class="nav-item" onclick="openSaque()">
-        <div class="nav-icon">💸</div>
-        <div class="nav-label">Sacar</div>
-      </button>
-      <button class="nav-item active" onclick="showTab('perfil')">
-        <div class="nav-icon">👤</div>
-        <div class="nav-label">Perfil</div>
-      </button>
-    </nav>
-  </div>
-
-  <!-- ═══ OVERLAY: DEPÓSITO ═══ -->
-  <div id="overlay-deposito" class="overlay" onclick="closeOverlayIfBg(event,'overlay-deposito')">
-    <div class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-title">Depositar</div>
-        <button class="sheet-close" onclick="closeOverlay('overlay-deposito')">✕</button>
-      </div>
-
-      <div class="sheet-body" id="deposito-body">
-        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Escolha o valor ou digite outro:</p>
-
-        <div class="valores-grid">
-          <button class="valor-btn" onclick="selectValor(10, this)">R$10</button>
-          <button class="valor-btn" onclick="selectValor(20, this)">R$20</button>
-          <button class="valor-btn" onclick="selectValor(50, this)">R$50</button>
-          <button class="valor-btn" onclick="selectValor(100, this)">R$100</button>
-          <button class="valor-btn" onclick="selectValor(200, this)">R$200</button>
-        </div>
-
-        <div class="input-custom">
-          <span>R$</span>
-          <input type="number" id="deposito-valor" placeholder="Ou digite (mín. 5)" min="5" max="200"
-            oninput="onDepositoInput(this)">
-        </div>
-
-        <button class="btn-primary" onclick="confirmarDeposito()">Gerar PIX</button>
-      </div>
-
-      <div class="pix-pending" id="pix-pending">
-        <div class="pix-circle">🔐</div>
-        <h3>Aguardando pagamento</h3>
-        <p>Seu PIX está sendo processado.<br>O saldo será creditado em breve.</p>
-        <div class="pix-timer" id="pix-timer">—</div>
-        <p style="font-size:12px;color:var(--muted)">Não feche esta tela.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══ OVERLAY: SAQUE ═══ -->
-  <div id="overlay-saque" class="overlay" onclick="closeOverlayIfBg(event,'overlay-saque')">
-    <div class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-title">Sacar</div>
-        <button class="sheet-close" onclick="closeOverlay('overlay-saque')">✕</button>
-      </div>
-
-      <div class="sheet-body" id="saque-body">
-        <div class="saldo-disp">
-          <div class="label">Disponível para saque</div>
-          <div class="value" id="saque-saldo-disp">R$0,00</div>
-        </div>
-
-        <div class="field">
-          <label>Chave PIX</label>
-          <input type="text" id="saque-pix" placeholder="CPF, e-mail ou telefone">
-        </div>
-
-        <div class="input-custom" style="margin-bottom:16px">
-          <span>R$</span>
-          <input type="number" id="saque-valor" placeholder="Valor do saque" min="5">
-        </div>
-
-        <button class="btn-primary" onclick="confirmarSaque()">Solicitar saque</button>
-      </div>
-
-      <div class="saque-success" id="saque-success">
-        <div class="icon">✅</div>
-        <h3>Saque solicitado!</h3>
-        <p id="saque-success-msg">Seu saque foi processado.<br>O valor chegará em até 24h.</p>
-        <div style="margin-top:20px">
-          <button class="btn-gold" onclick="closeOverlay('overlay-saque')">Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOAST -->
-  <div id="toast" class="toast"></div>
+<div class="header">
+  <div class="logo">Véri<em>Bed</em></div>
+  <div class="header-tag">Games</div>
 </div>
 
-<!-- ─── FIREBASE ─── -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, doc, getDoc, setDoc, collection, addDoc, updateDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<div class="hero">
+  <div class="hero-tag"><span class="live-dot"></span> ao vivo agora</div>
+  <h1>Jogue com<br><span>estilo</span> ✈</h1>
+  <p>Plataforma de games entre amigos. Saldo fictício, ranking real, adrenalina garantida.</p>
+</div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAz5pER3LbB0m8TN-8seJ0-QEdvIC3bsow",
-  authDomain: "templarios-12195.firebaseapp.com",
-  databaseURL: "https://templarios-12195-default-rtdb.firebaseio.com",
-  projectId: "templarios-12195",
-  storageBucket: "templarios-12195.firebasestorage.app",
-  messagingSenderId: "980758186678",
-  appId: "1:980758186678:web:07c125ccfc43e5f359f417"
-};
+<div class="section">
+  <div class="section-label">Jogos disponíveis</div>
+</div>
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+<div class="games-grid">
 
-window._db = db;
-window._firestoreFns = { doc, getDoc, setDoc, collection, addDoc, updateDoc, serverTimestamp };
-
-// Sessão local
-const SESSION_KEY = 'veribed_session';
-
-function saveSession(uid) { localStorage.setItem(SESSION_KEY, uid); }
-function clearSession() { localStorage.removeItem(SESSION_KEY); }
-function getSession() { return localStorage.getItem(SESSION_KEY); }
-
-window._state = { uid: null, username: null, saldo: 0 };
-
-// ── AUTO LOGIN ──
-const savedUid = getSession();
-if (savedUid) {
-  restoreSession(savedUid);
-}
-
-async function restoreSession(uid) {
-  try {
-    const { doc, getDoc } = window._firestoreFns;
-    const snap = await getDoc(doc(db, 'usuarios', uid));
-    if (snap.exists()) {
-      const data = snap.data();
-      window._state = { uid, username: data.username, saldo: data.saldo };
-      enterMain();
-    } else {
-      clearSession();
-    }
-  } catch(e) {
-    clearSession();
-  }
-}
-
-// ── LOGIN ──
-window.doLogin = async function() {
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  if (!user || !pass) return showAuthError('Preencha todos os campos.');
-
-  try {
-    const { doc, getDoc } = window._firestoreFns;
-    const snap = await getDoc(doc(db, 'usuarios', user));
-    if (!snap.exists()) return showAuthError('Usuário não encontrado.');
-    const data = snap.data();
-    if (data.senha !== btoa(pass)) return showAuthError('Senha incorreta.');
-    window._state = { uid: user, username: data.username, saldo: data.saldo };
-    saveSession(user);
-    enterMain();
-  } catch(e) {
-    showAuthError('Erro ao conectar. Tente novamente.');
-  }
-}
-
-// ── CADASTRO ──
-window.doCadastro = async function() {
-  const user = document.getElementById('cad-user').value.trim().toLowerCase();
-  const pass = document.getElementById('cad-pass').value;
-  const pass2 = document.getElementById('cad-pass2').value;
-
-  if (!user || !pass) return showAuthError('Preencha todos os campos.');
-  if (user.length < 3) return showAuthError('Usuário deve ter ao menos 3 caracteres.');
-  if (pass.length < 6) return showAuthError('Senha deve ter ao menos 6 caracteres.');
-  if (pass !== pass2) return showAuthError('As senhas não coincidem.');
-  if (!/^[a-z0-9_]+$/.test(user)) return showAuthError('Usuário: apenas letras, números e _');
-
-  try {
-    const { doc, getDoc, setDoc, serverTimestamp } = window._firestoreFns;
-    const snap = await getDoc(doc(db, 'usuarios', user));
-    if (snap.exists()) return showAuthError('Usuário já existe. Tente outro.');
-
-    await setDoc(doc(db, 'usuarios', user), {
-      username: user,
-      senha: btoa(pass),
-      saldo: 100,
-      criadoEm: serverTimestamp()
-    });
-
-    window._state = { uid: user, username: user, saldo: 100 };
-    saveSession(user);
-    enterMain();
-    showToast('🎁 R$100 de bônus creditado!', 'success');
-  } catch(e) {
-    showAuthError('Erro ao criar conta. Tente novamente.');
-  }
-}
-
-// ── LOGOUT ──
-window.doLogout = function() {
-  clearSession();
-  window._state = { uid: null, username: null, saldo: 0 };
-  showScreen('screen-auth');
-}
-
-// ── DEPÓSITO ──
-window.confirmarDeposito = async function() {
-  const input = document.getElementById('deposito-valor');
-  const val = parseFloat(input.value);
-
-  if (!val || val < 5 || val > 200) {
-    showToast('Valor entre R$5 e R$200', 'error'); return;
-  }
-
-  document.getElementById('deposito-body').style.display = 'none';
-  document.getElementById('pix-pending').style.display = 'block';
-
-  // Tempo aleatório 5–12 minutos
-  const segundos = Math.floor(Math.random() * (720 - 300 + 1)) + 300;
-  let restante = segundos;
-
-  const { doc: firestoreDoc, addDoc, collection, updateDoc, serverTimestamp } = window._firestoreFns;
-  const dep = await addDoc(collection(window._db, 'depositos'), {
-    uid: window._state.uid,
-    valor: val,
-    status: 'pendente',
-    criadoEm: serverTimestamp()
-  });
-
-  const timer = setInterval(async () => {
-    restante--;
-    const m = Math.floor(restante / 60);
-    const s = restante % 60;
-    document.getElementById('pix-timer').textContent =
-      `${m}:${s.toString().padStart(2,'0')}`;
-
-    if (restante <= 0) {
-      clearInterval(timer);
-      // Creditar
-      window._state.saldo = parseFloat((window._state.saldo + val).toFixed(2));
-      await updateDoc(firestoreDoc(window._db, 'usuarios', window._state.uid), {
-        saldo: window._state.saldo
-      });
-      await updateDoc(firestoreDoc(window._db, 'depositos', dep.id), {
-        status: 'confirmado',
-        confirmadoEm: serverTimestamp()
-      });
-      updateSaldoUI();
-      closeOverlay('overlay-deposito');
-      resetDeposito();
-      showToast(`✅ R$${val.toFixed(2).replace('.',',')} creditado!`, 'success');
-    }
-  }, 1000);
-}
-
-// ── SAQUE ──
-window.confirmarSaque = async function() {
-  const pix = document.getElementById('saque-pix').value.trim();
-  const val = parseFloat(document.getElementById('saque-valor').value);
-
-  if (!pix) { showToast('Informe sua chave PIX', 'error'); return; }
-  if (!val || val < 5) { showToast('Mínimo R$5 para saque', 'error'); return; }
-  if (val > window._state.saldo) { showToast('Saldo insuficiente', 'error'); return; }
-
-  const { doc: firestoreDoc, addDoc, collection, updateDoc, serverTimestamp } = window._firestoreFns;
-
-  window._state.saldo = parseFloat((window._state.saldo - val).toFixed(2));
-  await updateDoc(firestoreDoc(window._db, 'usuarios', window._state.uid), {
-    saldo: window._state.saldo
-  });
-  await addDoc(collection(window._db, 'saques'), {
-    uid: window._state.uid,
-    pix,
-    valor: val,
-    status: 'processando',
-    criadoEm: serverTimestamp()
-  });
-
-  updateSaldoUI();
-  document.getElementById('saque-body').style.display = 'none';
-  document.getElementById('saque-success').style.display = 'block';
-  document.getElementById('saque-success-msg').innerHTML =
-    `R$${val.toFixed(2).replace('.',',')} para <strong>${pix}</strong><br>chegará em até 24h.`;
-}
-
-// ── UTILS ──
-function enterMain() {
-  showScreen('screen-main');
-  updateSaldoUI();
-  buildGames();
-  updateProfile();
-}
-
-window.updateSaldoUI = function() {
-  const fmt = 'R$' + window._state.saldo.toFixed(2).replace('.',',');
-  const els = document.querySelectorAll('#saldo-display, #saldo-display-2, #stat-saldo, #game-saldo-bar, #saque-saldo-disp');
-  els.forEach(el => el && (el.textContent = fmt));
-}
-
-function updateProfile() {
-  const u = window._state.username || '?';
-  const el = document.getElementById('profile-avatar');
-  if (el) el.textContent = u[0].toUpperCase();
-  const nm = document.getElementById('profile-name');
-  if (nm) nm.textContent = u;
-}
-
-function showAuthError(msg) {
-  const el = document.getElementById('auth-error');
-  el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 3000);
-}
-
-window.showToast = function(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (type ? ' ' + type : '') + ' show';
-  setTimeout(() => t.className = 'toast', 3000);
-}
-
-window.showScreen = function(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-window.showTab = function(tab) {
-  if (tab === 'home') showScreen('screen-main');
-  if (tab === 'perfil') { showScreen('screen-profile'); updateProfile(); }
-}
-
-window.openDeposito = function() {
-  resetDeposito();
-  document.getElementById('saque-saldo-disp').textContent = 'R$' + window._state.saldo.toFixed(2).replace('.',',');
-  document.getElementById('overlay-deposito').classList.add('open');
-}
-
-window.openSaque = function() {
-  document.getElementById('saque-body').style.display = 'block';
-  document.getElementById('saque-success').style.display = 'none';
-  document.getElementById('saque-pix').value = '';
-  document.getElementById('saque-valor').value = '';
-  document.getElementById('saque-saldo-disp').textContent = 'R$' + window._state.saldo.toFixed(2).replace('.',',');
-  document.getElementById('overlay-saque').classList.add('open');
-}
-
-window.closeOverlay = function(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-window.closeOverlayIfBg = function(e, id) {
-  if (e.target === document.getElementById(id)) closeOverlay(id);
-}
-
-function resetDeposito() {
-  document.getElementById('deposito-body').style.display = 'block';
-  document.getElementById('pix-pending').style.display = 'none';
-  document.getElementById('deposito-valor').value = '';
-  document.querySelectorAll('.valor-btn').forEach(b => b.classList.remove('selected'));
-}
-
-window.selectValor = function(v, btn) {
-  document.querySelectorAll('.valor-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  document.getElementById('deposito-valor').value = v;
-}
-
-window.onDepositoInput = function(input) {
-  document.querySelectorAll('.valor-btn').forEach(b => b.classList.remove('selected'));
-}
-
-window.switchTab = function(tab) {
-  document.querySelectorAll('.auth-tab').forEach((t, i) => {
-    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'cadastro'));
-  });
-  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
-  document.getElementById('form-cadastro').style.display = tab === 'cadastro' ? 'block' : 'none';
-  document.getElementById('auth-error').style.display = 'none';
-}
-
-// ── API KEY ──
-const API_KEY = '8bq1oOhtmUL842rhU68TFR89SGsLl0wsrkCWjzbzuUIDVUADs8';
-
-const GAMES = [
-  {
-    id: 'fortune-tiger',
-    name: 'Fortune Tiger',
-    provider: 'PGSoft',
-    emoji: '🐯',
-    badge: 'Popular',
-    gameId: '18227'
-  },
-  {
-    id: 'aviator',
-    name: 'Aviator',
-    provider: 'Spribe',
-    emoji: '✈️',
-    badge: 'Hot',
-    gameId: '15373'
-  },
-  {
-    id: 'treasure-bowl',
-    name: 'Treasure Pot',
-    provider: 'JDB',
-    emoji: '🏺',
-    badge: null,
-    gameId: '17755'
-  }
-];
-
-function buildGames() {
-  const grid = document.getElementById('games-grid');
-  if (!grid) return;
-  grid.innerHTML = GAMES.map(g => `
-    <div class="game-card" onclick="openGame('${g.id}')">
-      ${g.badge ? `<div class="game-badge">${g.badge}</div>` : ''}
-      <div class="game-thumb-placeholder">${g.emoji}</div>
-      <div class="game-info">
-        <div class="game-name">${g.name}</div>
-        <div class="game-provider">${g.provider}</div>
+  <!-- CASSINO com Aviator dentro -->
+  <div class="game-card featured" style="cursor:default">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="badge badge-live">● Live</span>
+        <span class="badge badge-popular">Popular</span>
+      </div>
+      <div class="card-title">Cassino</div>
+      <div class="card-desc">Escolha seu jogo. Aviator no ar agora.</div>
+    </div>
+    <div class="card-visual card-visual-cassino">
+      <svg class="curve-svg" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 100 Q 100 80 200 50 Q 300 20 400 0" stroke="#e03131" stroke-width="2" opacity=".6"/>
+        <path d="M0 100 Q 100 80 200 50 Q 300 20 400 0 L400 100 Z" fill="url(#rg)" opacity=".3"/>
+        <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e03131" stop-opacity=".4"/><stop offset="1" stop-color="#e03131" stop-opacity="0"/></linearGradient></defs>
+      </svg>
+      <div class="plane-anim">✈️</div>
+      <div class="mult-badge">2.31x</div>
+    </div>
+    <div class="sub-games">
+      <div class="sub-game active-game" onclick="window.location.href='aviator.html'">
+        <span class="sub-game-emoji">✈️</span>
+        <div>
+          <div class="sub-game-name">Aviator</div>
+          <div class="sub-game-tag">● Ao vivo</div>
+        </div>
+      </div>
+      <div class="sub-game coming">
+        <span class="sub-game-emoji">🎰</span>
+        <div>
+          <div class="sub-game-name">Slots</div>
+          <div class="sub-game-tag">Em breve</div>
+        </div>
+      </div>
+      <div class="sub-game coming">
+        <span class="sub-game-emoji">💣</span>
+        <div>
+          <div class="sub-game-name">Mines</div>
+          <div class="sub-game-tag">Em breve</div>
+        </div>
+      </div>
+      <div class="sub-game coming">
+        <span class="sub-game-emoji">🃏</span>
+        <div>
+          <div class="sub-game-name">Blackjack</div>
+          <div class="sub-game-tag">Em breve</div>
+        </div>
       </div>
     </div>
-  `).join('');
-}
+  </div>
 
-window.openGame = async function(gameId) {
-  const game = GAMES.find(g => g.id === gameId);
-  if (!game) return;
+  <!-- JOGO DO BICHO -->
+  <div class="game-card bicho-card" onclick="window.location.href='bicho.html'">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="badge badge-bicho">✨ Novo</span>
+      </div>
+      <div class="card-title">Jogo do Bicho</div>
+      <div class="card-desc">Quiz, palpite, tabela e animal do dia. Tradição reinventada.</div>
+    </div>
+    <div class="card-visual card-visual-bicho">
+      <div class="bicho-icons">🦅🐘🦁🐊🦓🦋🐺🦜</div>
+    </div>
+    <div class="card-bottom">
+      <span class="card-action">Ver ferramentas</span>
+      <span class="card-arrow">→</span>
+    </div>
+  </div>
 
-  // O seu API_KEY é o token que você usou nos links de teste.
-  const url = `https://slotslaunch.com/iframe/${game.gameId}?token=${API_KEY}`;
-  
-  document.getElementById('game-iframe').src = url;
-  updateSaldoUI();
-  showScreen('screen-game');
-}
-window.closeGame = async function() {
-  // Ao sair do jogo, re-fetch saldo do Firestore (sincroniza)
-  document.getElementById('game-iframe').src = '';
-  try {
-    const { doc, getDoc } = window._firestoreFns;
-    const snap = await getDoc(doc(window._db, 'usuarios', window._state.uid));
-    if (snap.exists()) {
-      window._state.saldo = snap.data().saldo;
-      updateSaldoUI();
-    }
-  } catch(e) {}
-  showScreen('screen-main');
-}
-</script>
+</div>
+
+<div class="footer">
+  <p><strong>VériBed</strong> — plataforma de entretenimento fictício.<br>Saldo fictício · Sem dinheiro real · Só adrenalina 🚀</p>
+</div>
 </body>
 </html>
